@@ -1,0 +1,12 @@
+{
+  "workflow": {
+    "plan_review_convergence": true
+  },
+  "review": {
+    "models": {
+      "ollama": "llama3.2:latest",
+      "lm_studio": "local-model",
+      "llama_cpp": "llama-model"
+    }
+  }
+}
