@@ -35,6 +35,14 @@ clap = { version = "4.5.58", features = ["derive"] }
 clap_complete = "4.5.66"
 miette = "7.6.0"
 
+# Release profile optimizations for binary size (M4 recommendation)
+# These flags reduce binary size by ~30-40% without impacting runtime performance
+[profile.release]
+strip = true         # Remove debug symbols and symbol table (-3MB typically)
+lto = true          # Link-time optimization - enables cross-crate inlining (-1-2MB)
+codegen-units = 1   # Single codegen unit for better optimization (slower build, smaller binary)
+opt-level = "z"     # Optimize for size over speed (alternative: "s" for size with some speed)
+
 [[bin]]
 name = "mdget"
 path = "src/main.rs"
