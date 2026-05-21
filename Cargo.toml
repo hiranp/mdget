@@ -30,6 +30,14 @@ tokio = { version = "1.49.0", features = ["full"] }
 tokio-graceful-shutdown = "0.19.2"
 miette = "7.6.0"
 
+# Phase 1: HTTP Core & Basic Extraction dependencies
+ureq       = "3.1"           # Pure Rust HTTP client (no system libcurl dependency)
+scraper    = "0.20"          # HTML parsing (pulls html5ever transitively)
+serde_yml  = "0.0.12"        # Replaces deprecated serde_yaml 0.9
+chrono     = { version = "0.4", features = ["serde"] }
+url        = "2.5"           # Absolute URL joining + percent-encoding
+encoding_rs = "0.8"          # Charset detection
+
 [build-dependencies]
 clap = { version = "4.5.58", features = ["derive"] }
 clap_complete = "4.5.66"
