@@ -57,7 +57,9 @@ Preserve existing dependencies (clap, config, serde, tracing, tokio, miette, etc
 <acceptance_criteria>
 - Cargo.toml contains all 7 new dependencies with exact versions
 - `cargo check` exits 0 (dependencies resolve)
-- Binary size increase is <3MB (measured via `cargo build --release && ls -lh target/release/mdget`)
+- **Binary size baseline recorded** (M4): `cargo build --release && ls -lh target/release/mdget` - document size before adding deps
+- Binary size increase is <3MB after adding dependencies
+- **Size checkpoint alarm**: If binary exceeds 12MB at any task, investigate before proceeding
 </acceptance_criteria>
 
 ---
@@ -152,11 +154,14 @@ Handle these error cases:
 - HttpClient::fetch compiles without errors
 - Method returns Result<HttpResponse>
 - Uses spawn_blocking for curl operations (no blocking in async context)
+- **Async verification (M1)**: Test with `tokio::time::timeout` to verify non-blocking behavior
+- **Callback pattern documented (M1)**: Add code comments explaining how redirect tracking crosses thread boundary
 - Timeout is enforced (configurable via HttpClient constructor)
 - Max redirects enforced (configurable)
 - Redirect chain tracked (stored in HttpResponse)
 - HTTP errors produce miette::Result::Err with status code
 - User-agent header set (default: "mdget/0.2.0")
+- **Binary size checkpoint (M4)**: Measure size after this task, should be ~5-6MB
 </acceptance_criteria>
 
 ---
@@ -221,6 +226,8 @@ pub fn yaml_frontmatter(data: &impl Serialize) -> Result<String> {
 - ErrorEnvelope::to_yaml() returns valid YAML frontmatter (opens with `---\n`, closes with `---\n`)
 - success field is false in ErrorEnvelope
 - fetched_at contains current UTC timestamp
+- **Error message UX (L1)**: `error` field is machine-readable (e.g., "http_timeout"), `message` field is human-readable
+- **Example (L1)**: `error: "http_not_found"`, `message: "Page not found: The server returned HTTP 404 for https://example.com"`
 - SuccessEnvelope struct exists (full implementation deferred to Task 7)
 - yaml_frontmatter helper compiles and works for both envelope types
 - `cargo test envelope` (if tests added) exits 0
@@ -271,8 +278,12 @@ impl MarkdownRenderer {
 - Blockquotes: `<blockquote>` → `> ` prefix
 - Images: `<img src="..." alt="...">` → `![alt](src)`
 
-3. **Escape special characters** in text nodes:
-- `*`, `_`, `[`, `]`, `<`, `>`, `#` → prepend `\`
+3. **Escape special characters (M3 - explicit rules):**
+- **In text nodes**: Escape markdown special chars: `*`, `_`, `[`, `]`, `<`, `>`, `#`, `` ` ``, `\`
+- **In code blocks**: Do NOT escape (preserve literal content)
+- **HTML entities**: Decode BEFORE escaping (e.g., `&lt;` → `<`, not `\&lt;`)
+- **Link URLs**: Percent-encode spaces as `%20`, parens as `%28`/`%29`, brackets as `%5B`/`%5D`
+- **Edge case**: If text already contains markdown syntax (e.g., `**bold**`), escape the `*` chars
 
 4. **Public API:**
 ```rust
@@ -292,6 +303,8 @@ pub fn html_to_markdown(html: &str) -> Result<String> {
 - Code blocks use triple backticks
 - Special characters in text are escaped
 - Nested elements work (e.g., `<p><strong>text</strong></p>`)
+- **Escaping edge cases (M3)**: Test `&amp;` → `&`, `<code>*ptr</code>` → `` `*ptr` `` (no escape), link with spaces → `%20`
+- **Binary size checkpoint (M4)**: Measure size after this task, should be ~7-8MB
 </acceptance_criteria>
 
 ---
@@ -300,6 +313,7 @@ pub fn html_to_markdown(html: &str) -> Result<String> {
 
 <read_first>
 - .planning/phases/01/01-RESEARCH.md (Section 3: Readability-Style Article Extraction)
+- .planning/phases/01/test-corpus.md (M2: Test URL list and validation criteria)
 - src/fetch/extract.rs (stub from Task 2)
 </read_first>
 
@@ -333,12 +347,20 @@ impl ReadabilityExtractor {
     }
     
     fn score_element(&self, elem: scraper::ElementRef) -> f64 {
-        // Scoring heuristics:
-        // +10 for <article>, <main>
-        // +5 for class names: content, article, post, entry
-        // -5 for class names: comment, ad, sidebar, nav, footer
-        // +1 per paragraph, +0.1 per text length
-        // -1 per <nav>, <footer>, <aside>
+        // Scoring heuristics (M2 - validated against test-corpus.md):
+        // Positive signals:
+        // +10 for <article>, <main> tags
+        // +5 for class names: content, article, post, entry, markdown-body
+        // +5 for semantic IDs: content, article, main
+        // +1 per paragraph, +0.1 per 10 chars of text
+        // 
+        // Negative signals:
+        // -20 for <nav> tags (heavy penalty - see GitHub edge case)
+        // -5 for class names: comment, ad, sidebar, nav, footer, promo, sponsor
+        // -5 per <footer>, <aside>
+        // 
+        // Tie-breaking: When scores within 10%, prefer deepest node
+        // Logging: Use tracing::debug! to log top 3 candidates for debugging
     }
     
     fn find_article_node(&self, doc: &scraper::Html) -> Result<scraper::ElementRef> {
@@ -377,9 +399,14 @@ pub fn extract_article(html: &str) -> Result<ExtractedArticle> {
 - Article node scoring prefers `<article>` and `<main>` tags
 - Class name heuristics work (positive for "content", negative for "nav")
 - Unwanted elements removed (nav, footer, ads)
-- Word count is accurate (count whitespace-separated tokens in text)
+- **Word count algorithm (L3)**: Split on whitespace, filter tokens <2 chars, count remaining
 - Function returns Err if no suitable article node found (score too low)
 - Cleaned HTML is valid (parseable by scraper)
+- **Readability validation (M2 - CRITICAL)**: Test extraction on 20 URLs from test-corpus.md
+- **Scoring debug logs (M2)**: Add tracing::debug! for top 3 scoring nodes per URL
+- **Success threshold (M2)**: Minimum 15/20 URLs (75%) extract correctly
+- **Tie-breaking (M2)**: When scores within 10%, prefer deepest node
+- **Binary size checkpoint (M4)**: Measure size after this task, should be ~10-12MB
 </acceptance_criteria>
 
 ---
@@ -502,7 +529,8 @@ pub async fn fetch_url(url: &str, options: FetchOptions) -> Result<String> {
         return Ok(envelope.to_yaml()?);
     }
     
-    // 4. Detect charset and convert to UTF-8
+    // 4. Detect charset and convert to UTF-8 (L2 - fallback order)
+    // Fallback order: Content-Type header → HTML meta charset → UTF-8
     let html = encoding_rs::Encoding::for_label(...)
         .unwrap_or(encoding_rs::UTF_8)
         .decode(&response.body)
@@ -537,6 +565,7 @@ pub async fn fetch_url(url: &str, options: FetchOptions) -> Result<String> {
 - Network errors produce ErrorEnvelope (timeout, DNS failure)
 - Redirect chain tracked in SuccessEnvelope when redirects occur
 - Non-UTF-8 HTML converted to UTF-8 (using encoding_rs)
+- **Charset detection (L2)**: Fallback order implemented: Content-Type header → HTML meta → UTF-8
 - Function is async (can be awaited)
 </acceptance_criteria>
 
