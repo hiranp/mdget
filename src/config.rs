@@ -6,9 +6,9 @@ use std::{env, path::PathBuf};
 
 use crate::cli;
 
-static QUALIFIER: &str = "{{qualifier}}";
-static ORGANIZATION: &str = "{{organization}}";
-static APPLICATION: &str = "{{application}}";
+static QUALIFIER: &str = "";
+static ORGANIZATION: &str = "";
+static APPLICATION: &str = "mdget";
 
 // default value <- global configuration file <- user configuration file <- environmen variables <- command line arguments
 #[derive(Debug, Serialize, Deserialize)]
@@ -43,7 +43,7 @@ impl GlobalConfig {
         let home_path: PathBuf =
             cli.home
                 .clone()
-                .unwrap_or_else(|| match env::var("{{ application | shouty_snake_case }}_HOME") {
+                .unwrap_or_else(|| match env::var("MDGET_HOME") {
                     Ok(v) => PathBuf::from(v),
                     Err(_) => project_dir.config_dir().to_path_buf(),
                 });
@@ -69,7 +69,7 @@ impl GlobalConfig {
             .add_source(File::with_name(&system_config).required(false))
             .add_source(File::from(user_config).required(false))
             .add_source(
-                Environment::with_prefix("{{ application | shouty_snake_case }}")
+                Environment::with_prefix("MDGET")
                     .separator("_")
                     .ignore_empty(true),
             );

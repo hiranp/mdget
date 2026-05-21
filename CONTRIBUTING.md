@@ -1,12 +1,12 @@
 # Contributing
 
-Thanks for contributing to {{project-name}}.
+Thanks for contributing to mdget.
 
 ## Setup
 
 ```bash
-git clone https://github.com/{{gh-username}}/{{project-name}}.git
-cd {{project-name}}
+git clone https://github.com/hiranp/mdget.git
+cd mdget
 cargo test --all-features
 ```
 
