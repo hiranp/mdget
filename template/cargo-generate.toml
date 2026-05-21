@@ -1,0 +1,33 @@
+[template]
+cargo_generate_version = ">=0.10.0"
+
+[placeholders.gh-username]
+type = "string"
+prompt = "[gh-username] GitHub username or organization (e.g. 'acme-org')"
+regex = '^[-a-zA-Z0-9]+$'
+
+[placeholders.short-description]
+type = "string"
+prompt = "[short-description] Short project description"
+default = "A modern Rust CLI"
+
+[placeholders.long-description]
+type = "string"
+prompt = "[long-description] Long project description for README"
+default = "A production-ready Rust CLI built from a modern template."
+
+[placeholders.qualifier]
+type = "string"
+prompt = "[qualifier] The reverse domain name notation of the application, excluding the organization or application name itself (e.g. 'com.example', can be empty)"
+default = ""
+regex = '^\S*$'
+
+[placeholders.organization]
+type = "string"
+prompt = "[organization] The name of the organization that develops this application, or for which the application is developed (e.g. 'Github Inc.', can be empty)"
+default = ""
+
+[placeholders.application]
+type = "string"
+prompt = "[application] The name of the application itself (e.g. 'app')"
+regex = '^\w+$'

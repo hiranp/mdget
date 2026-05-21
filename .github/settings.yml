@@ -1,0 +1,10 @@
+# Optional: enforced when https://github.com/apps/settings is installed.
+repository:
+  name: rust-cli-template
+  description: Modern Rust CLI template with CI, release automation, and best-practice defaults.
+  homepage: https://github.com/hiranp/rust-cli-template
+  has_issues: true
+  has_projects: false
+  has_wiki: false
+  default_branch: main
+  is_template: true
