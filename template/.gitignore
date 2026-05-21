@@ -1,7 +1,0 @@
-completions/
-debug/
-target/
-Cargo.lock
-.DS_Store
-**/*.rs.bk
-*.pdb

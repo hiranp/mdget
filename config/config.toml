@@ -3,4 +3,4 @@ level = "info"
 
 [log.file]
 enabled = false
-path = "/tmp/{{crate_name}}"
+path = "/tmp/mdget"

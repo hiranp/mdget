@@ -13,7 +13,7 @@ release:
 
 # Run the CLI; pass args with `just run -- --help`.
 run *args:
-  cargo run -- {{args}}
+  cargo run -- 
 
 # Run all tests.
 test:

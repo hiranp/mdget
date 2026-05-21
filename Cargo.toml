@@ -1,18 +1,18 @@
 [package]
-name = "{{project-name}}"
+name = "mdget"
 version = "0.2.0"
-description = "{{short-description}}"
+description = "Agent-first curl alternative"
 edition = "2024"
 rust-version = "1.85"
 build = "build.rs"
-authors = ["{{authors}}"]
+authors = ["Hiran <hiranp@yahoo.com>"]
 categories = ["command-line-utilities"]
 keywords = ["cli", "command-line", "template"]
 license = "MIT"
 readme = "README.md"
-repository = "https://github.com/{{gh-username}}/{{project-name}}"
-homepage = "https://github.com/{{gh-username}}/{{project-name}}"
-documentation = "https://docs.rs/{{project-name}}"
+repository = "https://github.com/hiranp/mdget"
+homepage = "https://github.com/hiranp/mdget"
+documentation = "https://docs.rs/mdget"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -36,5 +36,5 @@ clap_complete = "4.5.66"
 miette = "7.6.0"
 
 [[bin]]
-name = "{{application}}"
+name = "mdget"
 path = "src/main.rs"
