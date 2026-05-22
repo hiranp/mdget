@@ -33,11 +33,11 @@ jobs:
       - name: Test
         run: cargo test --all-features
 
-      - name: Build binary for smoke tests
-        run: cargo build --all-features
+      - name: Build release binary for smoke tests
+        run: cargo build --release --all-features
 
       - name: Smoke test --help
-        run: cargo run -- --help
+        run: ./target/release/mdget --help
 
       - name: Smoke test --version
-        run: cargo run -- --version
+        run: ./target/release/mdget --version
