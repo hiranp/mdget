@@ -1,6 +1,6 @@
 [package]
 name = "mdget"
-version = "0.2.0"
+version = "0.3.0"
 description = "Agent-first curl alternative"
 edition = "2024"
 rust-version = "1.85"
