@@ -165,8 +165,7 @@ fn classify_http_error(raw: &str, url: &str) -> (&'static str, String) {
 #[cfg(test)]
 mod tests {
     use super::{
-        classify_http_error, extract_charset_from_headers, extract_charset_from_html,
-        FetchOptions,
+        FetchOptions, classify_http_error, extract_charset_from_headers, extract_charset_from_html,
     };
 
     #[test]
