@@ -18,7 +18,6 @@ set edit:completion:arg-completer[mdget] = {|@words|
     }
     var completions = [
         &'mdget'= {
-            cand -H 'H'
             cand --home 'home'
             cand -l 'l'
             cand --log-level 'log-level'
@@ -36,7 +35,6 @@ set edit:completion:arg-completer[mdget] = {|@words|
             cand help 'Print this message or the help of the given subcommand(s)'
         }
         &'mdget;command1'= {
-            cand -H 'H'
             cand --home 'home'
             cand -l 'l'
             cand --log-level 'log-level'
@@ -49,7 +47,6 @@ set edit:completion:arg-completer[mdget] = {|@words|
         &'mdget;command2'= {
             cand -a 'An argument for command2'
             cand --arg 'An argument for command2'
-            cand -H 'H'
             cand --home 'home'
             cand -l 'l'
             cand --log-level 'log-level'
@@ -66,7 +63,10 @@ set edit:completion:arg-completer[mdget] = {|@words|
             cand --timeout 'Request timeout in seconds'
             cand --max-redirects 'Maximum redirects to follow'
             cand --user-agent 'User-Agent header'
-            cand -H 'H'
+            cand -H 'Repeatable header Name:Value'
+            cand --header 'Repeatable header Name:Value'
+            cand --cookie 'Repeatable cookie Name=Value'
+            cand --bearer 'Bearer token authorization'
             cand --home 'home'
             cand -l 'l'
             cand --log-level 'log-level'
@@ -74,12 +74,13 @@ set edit:completion:arg-completer[mdget] = {|@words|
             cand --log-file-path 'log-file-path'
             cand --log-file-level 'log-file-level'
             cand --compact 'Reduce body output to headings and short paragraph summaries'
+            cand --json 'Output as structured JSON envelope'
+            cand --no-frontmatter 'Output markdown body only without frontmatter'
             cand -h 'Print help'
             cand --help 'Print help'
         }
         &'mdget;completion'= {
             cand --shell 'The shell to generate the completions for'
-            cand -H 'H'
             cand --home 'home'
             cand -l 'l'
             cand --log-level 'log-level'

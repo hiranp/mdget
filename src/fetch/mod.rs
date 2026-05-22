@@ -6,9 +6,10 @@ mod envelope;
 mod extract;
 mod http;
 mod reduce;
+pub mod request;
 
+pub use self::request::{OutputMode, RequestOptions};
 use miette::Result;
-
 use self::envelope::{ErrorEnvelope, SuccessEnvelope};
 use self::http::HttpClient;
 use self::reduce::reduce_markdown;
@@ -19,6 +20,9 @@ pub struct FetchOptions {
     pub user_agent: String,
     pub compact: bool,
     pub max_body_words: Option<usize>,
+    pub request: RequestOptions,
+    #[allow(dead_code)]
+    pub output_mode: OutputMode,
 }
 
 impl Default for FetchOptions {
@@ -29,6 +33,8 @@ impl Default for FetchOptions {
             user_agent: concat!("mdget/", env!("CARGO_PKG_VERSION")).to_string(),
             compact: false,
             max_body_words: None,
+            request: RequestOptions::default(),
+            output_mode: OutputMode::FrontmatterMarkdown,
         }
     }
 }
@@ -39,7 +45,7 @@ pub async fn fetch_url(url: &str, options: FetchOptions) -> Result<String> {
     let client = HttpClient::new(options.timeout_secs, options.max_redirects, &options.user_agent);
 
     // 2. Fetch URL
-    let response = match client.fetch(url).await {
+    let response = match client.fetch(url, options.request.clone()).await {
         Ok(resp) => resp,
         Err(e) => {
             let (error, message) = classify_http_error(&e.to_string(), url);

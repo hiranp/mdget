@@ -21,7 +21,6 @@ Register-ArgumentCompleter -Native -CommandName 'mdget' -ScriptBlock {
 
     $completions = @(switch ($command) {
         'mdget' {
-            [CompletionResult]::new('-H', '-H ', [CompletionResultType]::ParameterName, 'H')
             [CompletionResult]::new('--home', '--home', [CompletionResultType]::ParameterName, 'home')
             [CompletionResult]::new('-l', '-l', [CompletionResultType]::ParameterName, 'l')
             [CompletionResult]::new('--log-level', '--log-level', [CompletionResultType]::ParameterName, 'log-level')
@@ -40,7 +39,6 @@ Register-ArgumentCompleter -Native -CommandName 'mdget' -ScriptBlock {
             break
         }
         'mdget;command1' {
-            [CompletionResult]::new('-H', '-H ', [CompletionResultType]::ParameterName, 'H')
             [CompletionResult]::new('--home', '--home', [CompletionResultType]::ParameterName, 'home')
             [CompletionResult]::new('-l', '-l', [CompletionResultType]::ParameterName, 'l')
             [CompletionResult]::new('--log-level', '--log-level', [CompletionResultType]::ParameterName, 'log-level')
@@ -54,7 +52,6 @@ Register-ArgumentCompleter -Native -CommandName 'mdget' -ScriptBlock {
         'mdget;command2' {
             [CompletionResult]::new('-a', '-a', [CompletionResultType]::ParameterName, 'An argument for command2')
             [CompletionResult]::new('--arg', '--arg', [CompletionResultType]::ParameterName, 'An argument for command2')
-            [CompletionResult]::new('-H', '-H ', [CompletionResultType]::ParameterName, 'H')
             [CompletionResult]::new('--home', '--home', [CompletionResultType]::ParameterName, 'home')
             [CompletionResult]::new('-l', '-l', [CompletionResultType]::ParameterName, 'l')
             [CompletionResult]::new('--log-level', '--log-level', [CompletionResultType]::ParameterName, 'log-level')
@@ -72,7 +69,10 @@ Register-ArgumentCompleter -Native -CommandName 'mdget' -ScriptBlock {
             [CompletionResult]::new('--timeout', '--timeout', [CompletionResultType]::ParameterName, 'Request timeout in seconds')
             [CompletionResult]::new('--max-redirects', '--max-redirects', [CompletionResultType]::ParameterName, 'Maximum redirects to follow')
             [CompletionResult]::new('--user-agent', '--user-agent', [CompletionResultType]::ParameterName, 'User-Agent header')
-            [CompletionResult]::new('-H', '-H ', [CompletionResultType]::ParameterName, 'H')
+            [CompletionResult]::new('-H', '-H ', [CompletionResultType]::ParameterName, 'Repeatable header Name:Value')
+            [CompletionResult]::new('--header', '--header', [CompletionResultType]::ParameterName, 'Repeatable header Name:Value')
+            [CompletionResult]::new('--cookie', '--cookie', [CompletionResultType]::ParameterName, 'Repeatable cookie Name=Value')
+            [CompletionResult]::new('--bearer', '--bearer', [CompletionResultType]::ParameterName, 'Bearer token authorization')
             [CompletionResult]::new('--home', '--home', [CompletionResultType]::ParameterName, 'home')
             [CompletionResult]::new('-l', '-l', [CompletionResultType]::ParameterName, 'l')
             [CompletionResult]::new('--log-level', '--log-level', [CompletionResultType]::ParameterName, 'log-level')
@@ -80,13 +80,14 @@ Register-ArgumentCompleter -Native -CommandName 'mdget' -ScriptBlock {
             [CompletionResult]::new('--log-file-path', '--log-file-path', [CompletionResultType]::ParameterName, 'log-file-path')
             [CompletionResult]::new('--log-file-level', '--log-file-level', [CompletionResultType]::ParameterName, 'log-file-level')
             [CompletionResult]::new('--compact', '--compact', [CompletionResultType]::ParameterName, 'Reduce body output to headings and short paragraph summaries')
+            [CompletionResult]::new('--json', '--json', [CompletionResultType]::ParameterName, 'Output as structured JSON envelope')
+            [CompletionResult]::new('--no-frontmatter', '--no-frontmatter', [CompletionResultType]::ParameterName, 'Output markdown body only without frontmatter')
             [CompletionResult]::new('-h', '-h', [CompletionResultType]::ParameterName, 'Print help')
             [CompletionResult]::new('--help', '--help', [CompletionResultType]::ParameterName, 'Print help')
             break
         }
         'mdget;completion' {
             [CompletionResult]::new('--shell', '--shell', [CompletionResultType]::ParameterName, 'The shell to generate the completions for')
-            [CompletionResult]::new('-H', '-H ', [CompletionResultType]::ParameterName, 'H')
             [CompletionResult]::new('--home', '--home', [CompletionResultType]::ParameterName, 'home')
             [CompletionResult]::new('-l', '-l', [CompletionResultType]::ParameterName, 'l')
             [CompletionResult]::new('--log-level', '--log-level', [CompletionResultType]::ParameterName, 'log-level')

@@ -5,6 +5,8 @@ use std::time::Duration;
 use miette::{Result, miette};
 use ureq::ResponseExt;
 
+use super::RequestOptions;
+
 pub struct HttpClient {
     timeout_secs: u64,
     max_redirects: u32,
@@ -30,7 +32,7 @@ impl HttpClient {
     /// ureq is blocking, so we must run it inside `spawn_blocking`. ureq is `Send` and
     /// thread-safe, so no issues with move semantics. Redirect history is captured via
     /// `response.history()` which returns an iterator over each redirect step.
-    pub async fn fetch(&self, url: &str) -> Result<HttpResponse> {
+    pub async fn fetch(&self, url: &str, request: RequestOptions) -> Result<HttpResponse> {
         // Validate before crossing the thread boundary
         url::Url::parse(url).map_err(|_| miette!("Invalid URL format: {url}"))?;
 
@@ -40,7 +42,7 @@ impl HttpClient {
         let user_agent = self.user_agent.clone();
 
         tokio::task::spawn_blocking(move || {
-            Self::fetch_blocking(&url, timeout, max_redirects, &user_agent)
+            Self::fetch_blocking(&url, timeout, max_redirects, &user_agent, request)
         })
         .await
         .map_err(|e| miette!("HTTP fetch task panicked: {e}"))?
@@ -51,6 +53,7 @@ impl HttpClient {
         timeout_secs: u64,
         max_redirects: u32,
         user_agent: &str,
+        request: RequestOptions,
     ) -> Result<HttpResponse> {
         // Build agent with explicit limits and redirect history enabled.
         let config = ureq::Agent::config_builder()
@@ -62,7 +65,27 @@ impl HttpClient {
             .build();
         let agent = ureq::Agent::new_with_config(config);
 
-        let response = agent.get(url).call().map_err(|e| match e {
+        let mut req = agent.get(url);
+
+        // Apply custom headers (excluding Authorization if bearer is present)
+        for (name, value) in &request.headers {
+            if request.bearer.is_some() && name.eq_ignore_ascii_case("Authorization") {
+                continue;
+            }
+            req = req.header(name, value);
+        }
+
+        // Apply bearer token if present
+        if let Some(token) = &request.bearer {
+            req = req.header("Authorization", format!("Bearer {}", token));
+        }
+
+        // Apply cookies if present
+        if let Some(cookie_str) = super::request::merge_cookies(&request.cookies) {
+            req = req.header("Cookie", cookie_str);
+        }
+
+        let response = req.call().map_err(|e| match e {
             ureq::Error::Timeout(_) => miette!("Request timed out: {url}"),
             ureq::Error::HostNotFound => miette!("Could not resolve host: {url}"),
             ureq::Error::TooManyRedirects => miette!("Too many redirects: {url}"),

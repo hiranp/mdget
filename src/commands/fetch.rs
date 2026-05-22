@@ -1,8 +1,9 @@
-use crate::fetch::{FetchOptions, fetch_url};
+use crate::fetch::{FetchOptions, fetch_url, OutputMode, RequestOptions, request::parse_header};
 use miette::{IntoDiagnostic, Result};
 use std::path::PathBuf;
 use tokio_graceful_shutdown::SubsystemHandle;
 
+#[allow(clippy::too_many_arguments)]
 pub async fn run(
     _subsys: &mut SubsystemHandle,
     url: String,
@@ -12,11 +13,43 @@ pub async fn run(
     timeout: u64,
     max_redirects: u32,
     user_agent: String,
+    headers: Vec<String>,
+    cookies: Vec<String>,
+    bearer: Option<String>,
+    json: bool,
+    no_frontmatter: bool,
 ) -> Result<()> {
     tracing::info!("Fetching URL: {}", url);
 
-    let options =
-        FetchOptions { timeout_secs: timeout, max_redirects, user_agent, compact, max_body_words };
+    let mut parsed_headers = Vec::new();
+    for h in headers {
+        let (name, value) = parse_header(&h)?;
+        parsed_headers.push((name, value));
+    }
+
+    let output_mode = if json {
+        OutputMode::JsonEnvelope
+    } else if no_frontmatter {
+        OutputMode::MarkdownOnly
+    } else {
+        OutputMode::FrontmatterMarkdown
+    };
+
+    let request_options = RequestOptions {
+        headers: parsed_headers,
+        cookies,
+        bearer,
+    };
+
+    let options = FetchOptions {
+        timeout_secs: timeout,
+        max_redirects,
+        user_agent,
+        compact,
+        max_body_words,
+        request: request_options,
+        output_mode,
+    };
 
     let result = fetch_url(&url, options).await?;
 
