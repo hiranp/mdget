@@ -31,6 +31,10 @@ See: `.planning/PROJECT.md` (updated 2026-05-21)
 **Phase:** Phase 2
 **Last Activity:** 2026-05-22
 
+**Recent Updates:**
+- Implemented Phase 2 token reduction options: `--compact` and `--max-body-words`.
+- Updated success envelope in frontmatter with size and status metadata (`body_word_count`, `render_mode`, `body_word_limit`, `body_truncated`).
+
 ## Phases
 
 | # | Phase | Status | Plans | Progress |
