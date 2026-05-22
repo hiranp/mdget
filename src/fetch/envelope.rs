@@ -51,32 +51,6 @@ pub struct SuccessEnvelope {
 }
 
 impl SuccessEnvelope {
-    pub fn new(
-        url: String,
-        status: u16,
-        title: Option<String>,
-        word_count: usize,
-        body_word_count: usize,
-        compact: bool,
-        body_word_limit: Option<usize>,
-        body_truncated: bool,
-        redirect_chain: Option<Vec<String>>,
-    ) -> Self {
-        Self {
-            success: true,
-            url,
-            status,
-            title,
-            word_count,
-            body_word_count,
-            render_mode: if compact { "compact".to_string() } else { "full".to_string() },
-            body_word_limit,
-            body_truncated,
-            fetched_at: chrono::Utc::now(),
-            redirect_chain,
-        }
-    }
-
     pub fn to_output(&self, markdown_body: &str) -> Result<String> {
         let frontmatter = yaml_frontmatter(self)?;
         Ok(format!("{}\n{}", frontmatter, markdown_body))

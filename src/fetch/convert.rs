@@ -161,7 +161,7 @@ impl MarkdownRenderer {
             .select(tr_selector)
             .map(|row| {
                 row.select(cell_selector)
-                    .map(|cell| cell.text().collect::<String>().trim().to_string())
+                    .map(|cell| cell.text().collect::<String>().trim().replace('|', "\\|"))
                     .collect::<Vec<_>>()
             })
             .filter(|cells| !cells.is_empty())
