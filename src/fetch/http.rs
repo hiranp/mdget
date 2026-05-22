@@ -2,7 +2,6 @@
 
 use std::time::Duration;
 
-use miette::{Result, miette};
 use ureq::ResponseExt;
 
 use super::RequestOptions;
@@ -21,6 +20,17 @@ pub struct HttpResponse {
     pub content_type: Option<String>,
 }
 
+#[derive(Debug)]
+pub enum HttpFetchError {
+    InvalidUrl,
+    Timeout,
+    HostNotFound,
+    TooManyRedirects,
+    BodyRead(String),
+    Transport(String),
+    Runtime(String),
+}
+
 impl HttpClient {
     pub fn new(timeout_secs: u64, max_redirects: u32, user_agent: &str) -> Self {
         Self { timeout_secs, max_redirects, user_agent: user_agent.to_string() }
@@ -32,9 +42,13 @@ impl HttpClient {
     /// ureq is blocking, so we must run it inside `spawn_blocking`. ureq is `Send` and
     /// thread-safe, so no issues with move semantics. Redirect history is captured via
     /// `response.history()` which returns an iterator over each redirect step.
-    pub async fn fetch(&self, url: &str, request: RequestOptions) -> Result<HttpResponse> {
+    pub async fn fetch(
+        &self,
+        url: &str,
+        request: RequestOptions,
+    ) -> std::result::Result<HttpResponse, HttpFetchError> {
         // Validate before crossing the thread boundary
-        url::Url::parse(url).map_err(|_| miette!("Invalid URL format: {url}"))?;
+        url::Url::parse(url).map_err(|_| HttpFetchError::InvalidUrl)?;
 
         let url = url.to_string();
         let timeout = self.timeout_secs;
@@ -45,7 +59,7 @@ impl HttpClient {
             Self::fetch_blocking(&url, timeout, max_redirects, &user_agent, request)
         })
         .await
-        .map_err(|e| miette!("HTTP fetch task panicked: {e}"))?
+        .map_err(|e| HttpFetchError::Runtime(e.to_string()))?
     }
 
     fn fetch_blocking(
@@ -54,7 +68,7 @@ impl HttpClient {
         max_redirects: u32,
         user_agent: &str,
         request: RequestOptions,
-    ) -> Result<HttpResponse> {
+    ) -> std::result::Result<HttpResponse, HttpFetchError> {
         // Build agent with explicit limits and redirect history enabled.
         let config = ureq::Agent::config_builder()
             .http_status_as_error(false)
@@ -86,10 +100,10 @@ impl HttpClient {
         }
 
         let response = req.call().map_err(|e| match e {
-            ureq::Error::Timeout(_) => miette!("Request timed out: {url}"),
-            ureq::Error::HostNotFound => miette!("Could not resolve host: {url}"),
-            ureq::Error::TooManyRedirects => miette!("Too many redirects: {url}"),
-            other => miette!("HTTP transport error: {other}"),
+            ureq::Error::Timeout(_) => HttpFetchError::Timeout,
+            ureq::Error::HostNotFound => HttpFetchError::HostNotFound,
+            ureq::Error::TooManyRedirects => HttpFetchError::TooManyRedirects,
+            other => HttpFetchError::Transport(other.to_string()),
         })?;
 
         let status = response.status().as_u16();
@@ -106,7 +120,7 @@ impl HttpClient {
 
         let mut body_reader = response.into_body();
         let body =
-            body_reader.read_to_vec().map_err(|e| miette!("Failed to read response body: {e}"))?;
+            body_reader.read_to_vec().map_err(|e| HttpFetchError::BodyRead(e.to_string()))?;
 
         Ok(HttpResponse { status, body, final_url, redirect_chain, content_type })
     }

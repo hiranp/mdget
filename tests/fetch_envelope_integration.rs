@@ -160,10 +160,7 @@ async fn fetch_plain_text_content() {
     assert_eq!(body.trim(), text_body);
 
     // Let's test with max_body_words option
-    let options = FetchOptions {
-        max_body_words: Some(5),
-        ..Default::default()
-    };
+    let options = FetchOptions { max_body_words: Some(5), ..Default::default() };
     let output_truncated = fetch_url(&url, options).await.expect("plain text output");
     let (frontmatter_truncated, body_truncated) = parse_frontmatter_and_body(&output_truncated);
 
@@ -286,8 +283,13 @@ async fn fetch_html_metadata_in_envelope() {
 
     assert_eq!(frontmatter["success"], Value::Bool(true));
     assert_eq!(frontmatter["title"], Value::String("Metadata Page".to_string()));
-    assert_eq!(frontmatter["description"], Value::String("This description must be extracted.".to_string()));
-    assert_eq!(frontmatter["canonical_url"], Value::String("https://example.com/canonical-url".to_string()));
+    assert_eq!(
+        frontmatter["description"],
+        Value::String("This description must be extracted.".to_string())
+    );
+    assert_eq!(
+        frontmatter["canonical_url"],
+        Value::String("https://example.com/canonical-url".to_string())
+    );
     assert!(body.contains("Some interesting article content."));
 }
-

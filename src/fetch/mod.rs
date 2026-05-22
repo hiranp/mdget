@@ -11,11 +11,22 @@ mod reduce;
 pub mod request;
 mod router;
 
+use self::envelope::{ErrorEnvelope, SuccessEnvelope};
+use self::http::{HttpClient, HttpFetchError, HttpResponse};
+use self::reduce::reduce_markdown;
 pub use self::request::{OutputMode, RequestOptions};
 use miette::Result;
-use self::envelope::{ErrorEnvelope, SuccessEnvelope};
-use self::http::HttpClient;
-use self::reduce::reduce_markdown;
+
+struct SuccessEnvelopeParts {
+    title: Option<String>,
+    description: Option<String>,
+    canonical_url: Option<String>,
+    word_count: usize,
+    body_word_count: usize,
+    body_truncated: bool,
+    compact: bool,
+    body_word_limit: Option<usize>,
+}
 
 pub struct FetchOptions {
     pub timeout_secs: u64,
@@ -24,7 +35,6 @@ pub struct FetchOptions {
     pub compact: bool,
     pub max_body_words: Option<usize>,
     pub request: RequestOptions,
-    #[allow(dead_code)]
     pub output_mode: OutputMode,
 }
 
@@ -51,7 +61,7 @@ pub async fn fetch_url(url: &str, options: FetchOptions) -> Result<String> {
     let response = match client.fetch(url, options.request.clone()).await {
         Ok(resp) => resp,
         Err(e) => {
-            let (error, message) = classify_http_error(&e.to_string(), url);
+            let (error, message) = classify_transport_error(&e, url);
             return error_output(url.to_string(), None, error, message);
         }
     };
@@ -80,81 +90,65 @@ pub async fn fetch_url(url: &str, options: FetchOptions) -> Result<String> {
         router::HandlerKind::Text => {
             let charset_label = extract_charset_from_headers(response.content_type.as_deref())
                 .unwrap_or_else(|| "utf-8".to_string());
-            let encoding =
-                encoding_rs::Encoding::for_label(charset_label.as_bytes()).unwrap_or(encoding_rs::UTF_8);
+            let encoding = encoding_rs::Encoding::for_label(charset_label.as_bytes())
+                .unwrap_or(encoding_rs::UTF_8);
             let text = encoding.decode(&response.body).0.into_owned();
 
             let handler_res = handlers::text::handle(&text, options.max_body_words);
 
-            let envelope = SuccessEnvelope {
-                success: true,
-                url: response.final_url,
-                status: response.status,
-                title: handler_res.title,
-                description: None,
-                canonical_url: None,
-                word_count: handler_res.word_count,
-                body_word_count: handler_res.body_word_count,
-                render_mode: if options.compact { "compact".to_string() } else { "full".to_string() },
-                body_word_limit: options.max_body_words,
-                body_truncated: handler_res.truncated,
-                fetched_at: chrono::Utc::now(),
-                redirect_chain: if response.redirect_chain.is_empty() {
-                    None
-                } else {
-                    Some(response.redirect_chain)
+            let envelope = build_success_envelope(
+                &response,
+                SuccessEnvelopeParts {
+                    title: handler_res.title,
+                    description: None,
+                    canonical_url: None,
+                    word_count: handler_res.word_count,
+                    body_word_count: handler_res.body_word_count,
+                    body_truncated: handler_res.truncated,
+                    compact: options.compact,
+                    body_word_limit: options.max_body_words,
                 },
-            };
+            );
 
             output::format_output(&envelope, &handler_res.body, options.output_mode)
         }
         router::HandlerKind::Json => {
-            let handler_res = handlers::json::handle(&response.body, response.content_type.as_deref());
+            let handler_res =
+                handlers::json::handle(&response.body, response.content_type.as_deref());
 
-            let envelope = SuccessEnvelope {
-                success: true,
-                url: response.final_url,
-                status: response.status,
-                title: handler_res.title,
-                description: None,
-                canonical_url: None,
-                word_count: handler_res.word_count,
-                body_word_count: handler_res.body_word_count,
-                render_mode: if options.compact { "compact".to_string() } else { "full".to_string() },
-                body_word_limit: options.max_body_words,
-                body_truncated: handler_res.truncated,
-                fetched_at: chrono::Utc::now(),
-                redirect_chain: if response.redirect_chain.is_empty() {
-                    None
-                } else {
-                    Some(response.redirect_chain)
+            let envelope = build_success_envelope(
+                &response,
+                SuccessEnvelopeParts {
+                    title: handler_res.title,
+                    description: None,
+                    canonical_url: None,
+                    word_count: handler_res.word_count,
+                    body_word_count: handler_res.body_word_count,
+                    body_truncated: handler_res.truncated,
+                    compact: options.compact,
+                    body_word_limit: options.max_body_words,
                 },
-            };
+            );
 
             output::format_output(&envelope, &handler_res.body, options.output_mode)
         }
         router::HandlerKind::Feed => {
-            let handler_res = handlers::feed::handle(&response.body, response.content_type.as_deref());
+            let handler_res =
+                handlers::feed::handle(&response.body, response.content_type.as_deref());
 
-            let envelope = SuccessEnvelope {
-                success: true,
-                url: response.final_url,
-                status: response.status,
-                title: handler_res.title,
-                description: None,
-                canonical_url: None,
-                word_count: handler_res.word_count,
-                body_word_count: handler_res.body_word_count,
-                render_mode: if options.compact { "compact".to_string() } else { "full".to_string() },
-                body_word_limit: options.max_body_words,
-                body_truncated: handler_res.truncated,
-                fetched_at: chrono::Utc::now(),
-                redirect_chain: if response.redirect_chain.is_empty() {
-                    None
-                } else {
-                    Some(response.redirect_chain)
+            let envelope = build_success_envelope(
+                &response,
+                SuccessEnvelopeParts {
+                    title: handler_res.title,
+                    description: None,
+                    canonical_url: None,
+                    word_count: handler_res.word_count,
+                    body_word_count: handler_res.body_word_count,
+                    body_truncated: handler_res.truncated,
+                    compact: options.compact,
+                    body_word_limit: options.max_body_words,
                 },
-            };
+            );
 
             output::format_output(&envelope, &handler_res.body, options.output_mode)
         }
@@ -171,25 +165,19 @@ pub async fn fetch_url(url: &str, options: FetchOptions) -> Result<String> {
                 }
             };
 
-            let envelope = SuccessEnvelope {
-                success: true,
-                url: response.final_url,
-                status: response.status,
-                title: handler_res.title,
-                description: None,
-                canonical_url: None,
-                word_count: handler_res.word_count,
-                body_word_count: handler_res.body_word_count,
-                render_mode: if options.compact { "compact".to_string() } else { "full".to_string() },
-                body_word_limit: options.max_body_words,
-                body_truncated: handler_res.truncated,
-                fetched_at: chrono::Utc::now(),
-                redirect_chain: if response.redirect_chain.is_empty() {
-                    None
-                } else {
-                    Some(response.redirect_chain)
+            let envelope = build_success_envelope(
+                &response,
+                SuccessEnvelopeParts {
+                    title: handler_res.title,
+                    description: None,
+                    canonical_url: None,
+                    word_count: handler_res.word_count,
+                    body_word_count: handler_res.body_word_count,
+                    body_truncated: handler_res.truncated,
+                    compact: options.compact,
+                    body_word_limit: options.max_body_words,
                 },
-            };
+            );
 
             output::format_output(&envelope, &handler_res.body, options.output_mode)
         }
@@ -200,8 +188,8 @@ pub async fn fetch_url(url: &str, options: FetchOptions) -> Result<String> {
                 .or_else(|| extract_charset_from_html(&response.body))
                 .unwrap_or_else(|| "utf-8".to_string());
 
-            let encoding =
-                encoding_rs::Encoding::for_label(charset_label.as_bytes()).unwrap_or(encoding_rs::UTF_8);
+            let encoding = encoding_rs::Encoding::for_label(charset_label.as_bytes())
+                .unwrap_or(encoding_rs::UTF_8);
             let html = encoding.decode(&response.body).0.into_owned();
 
             // 5. Extract article
@@ -218,40 +206,35 @@ pub async fn fetch_url(url: &str, options: FetchOptions) -> Result<String> {
             };
 
             // 6. Convert to markdown
-            let markdown = match convert::html_to_markdown(&article.content_html, &response.final_url) {
-                Ok(md) => md,
-                Err(e) => {
-                    return error_output(
-                        response.final_url.clone(),
-                        Some(response.status),
-                        "conversion_failed",
-                        format!("Failed to convert to markdown: {e}"),
-                    );
-                }
-            };
+            let markdown =
+                match convert::html_to_markdown(&article.content_html, &response.final_url) {
+                    Ok(md) => md,
+                    Err(e) => {
+                        return error_output(
+                            response.final_url.clone(),
+                            Some(response.status),
+                            "conversion_failed",
+                            format!("Failed to convert to markdown: {e}"),
+                        );
+                    }
+                };
 
             let reduced = reduce_markdown(&markdown, options.compact, options.max_body_words);
 
             // 7. Build SuccessEnvelope
-            let envelope = SuccessEnvelope {
-                success: true,
-                url: response.final_url,
-                status: response.status,
-                title: article.title,
-                description: article.description,
-                canonical_url: article.canonical_url,
-                word_count: article.word_count,
-                body_word_count: reduced.body_word_count,
-                render_mode: if options.compact { "compact".to_string() } else { "full".to_string() },
-                body_word_limit: options.max_body_words,
-                body_truncated: reduced.truncated,
-                fetched_at: chrono::Utc::now(),
-                redirect_chain: if response.redirect_chain.is_empty() {
-                    None
-                } else {
-                    Some(response.redirect_chain)
+            let envelope = build_success_envelope(
+                &response,
+                SuccessEnvelopeParts {
+                    title: article.title,
+                    description: article.description,
+                    canonical_url: article.canonical_url,
+                    word_count: article.word_count,
+                    body_word_count: reduced.body_word_count,
+                    body_truncated: reduced.truncated,
+                    compact: options.compact,
+                    body_word_limit: options.max_body_words,
                 },
-            };
+            );
 
             // 8. Return frontmatter + markdown
             output::format_output(&envelope, &reduced.body, options.output_mode)
@@ -304,26 +287,57 @@ fn error_output(
     ErrorEnvelope::new(url, status, error, message).to_yaml()
 }
 
-fn classify_http_error(raw: &str, url: &str) -> (&'static str, String) {
-    let lower = raw.to_ascii_lowercase();
-    if lower.contains("timed out") || lower.contains("timeout") {
-        ("http_timeout", format!("Request timed out: {url}"))
-    } else if lower.contains("resolve host") || lower.contains("host") {
-        ("http_dns_error", format!("Could not resolve host: {url}"))
-    } else if lower.contains("invalid url") {
-        ("invalid_url", format!("Invalid URL format: {url}"))
-    } else if lower.contains("too many redirects") {
-        ("too_many_redirects", format!("Too many redirects while fetching: {url}"))
-    } else {
-        ("http_error", format!("HTTP request failed: {raw}"))
+fn build_success_envelope(response: &HttpResponse, parts: SuccessEnvelopeParts) -> SuccessEnvelope {
+    SuccessEnvelope {
+        success: true,
+        url: response.final_url.clone(),
+        status: response.status,
+        title: parts.title,
+        description: parts.description,
+        canonical_url: parts.canonical_url,
+        word_count: parts.word_count,
+        body_word_count: parts.body_word_count,
+        render_mode: if parts.compact { "compact".to_string() } else { "full".to_string() },
+        body_word_limit: parts.body_word_limit,
+        body_truncated: parts.body_truncated,
+        fetched_at: chrono::Utc::now(),
+        redirect_chain: if response.redirect_chain.is_empty() {
+            None
+        } else {
+            Some(response.redirect_chain.clone())
+        },
+    }
+}
+
+fn classify_transport_error(err: &HttpFetchError, url: &str) -> (&'static str, String) {
+    match err {
+        HttpFetchError::Timeout => ("http_timeout", format!("Request timed out: {url}")),
+        HttpFetchError::HostNotFound => {
+            ("http_dns_error", format!("Could not resolve host: {url}"))
+        }
+        HttpFetchError::InvalidUrl => ("invalid_url", format!("Invalid URL format: {url}")),
+        HttpFetchError::TooManyRedirects => {
+            ("too_many_redirects", format!("Too many redirects while fetching: {url}"))
+        }
+        HttpFetchError::BodyRead(message) => {
+            ("http_read_error", format!("Failed to read HTTP response body: {message}"))
+        }
+        HttpFetchError::Runtime(message) => {
+            ("http_runtime_error", format!("HTTP request task failed: {message}"))
+        }
+        HttpFetchError::Transport(message) => {
+            ("http_error", format!("HTTP request failed: {message}"))
+        }
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::{
-        FetchOptions, classify_http_error, extract_charset_from_headers, extract_charset_from_html,
+        FetchOptions, classify_transport_error, extract_charset_from_headers,
+        extract_charset_from_html,
     };
+    use crate::fetch::http::HttpFetchError;
 
     #[test]
     fn default_fetch_options_are_agent_safe() {
@@ -381,17 +395,22 @@ mod tests {
 
     #[test]
     fn classify_http_error_maps_common_failures() {
-        let (kind, msg) = classify_http_error("operation timed out", "https://example.com");
+        let (kind, msg) = classify_transport_error(&HttpFetchError::Timeout, "https://example.com");
         assert_eq!(kind, "http_timeout");
         assert!(msg.contains("Request timed out"));
 
-        let (kind, _) = classify_http_error("too many redirects", "https://example.com");
+        let (kind, _) =
+            classify_transport_error(&HttpFetchError::TooManyRedirects, "https://example.com");
         assert_eq!(kind, "too_many_redirects");
 
-        let (kind, _) = classify_http_error("resolve host failed", "https://example.com");
+        let (kind, _) =
+            classify_transport_error(&HttpFetchError::HostNotFound, "https://example.com");
         assert_eq!(kind, "http_dns_error");
 
-        let (kind, _) = classify_http_error("some other transport issue", "https://example.com");
+        let (kind, _) = classify_transport_error(
+            &HttpFetchError::Transport("some other transport issue".to_string()),
+            "https://example.com",
+        );
         assert_eq!(kind, "http_error");
     }
 }
