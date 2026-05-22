@@ -31,6 +31,11 @@ async fn main() -> Result<()> {
             timeout,
             max_redirects,
             user_agent,
+            header,
+            cookie,
+            bearer,
+            json,
+            no_frontmatter,
         } => Toplevel::new(move |s: &mut SubsystemHandle| {
             s.start(SubsystemBuilder::new(
                 "fetch",
@@ -44,6 +49,11 @@ async fn main() -> Result<()> {
                         timeout,
                         max_redirects,
                         user_agent.clone(),
+                        header.clone(),
+                        cookie.clone(),
+                        bearer.clone(),
+                        json,
+                        no_frontmatter,
                     )
                     .await
                 },

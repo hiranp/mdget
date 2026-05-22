@@ -11,7 +11,7 @@ use clap_complete::Shell;
     long_about = None
 )]
 pub struct Cli {
-    #[arg(short = 'H', long, global = true, value_name = "PATH")]
+    #[arg(long, global = true, value_name = "PATH")]
     pub home: Option<PathBuf>,
 
     #[arg(short = 'l', long, global = true, value_name = "LEVEL", value_enum)]
@@ -82,6 +82,21 @@ pub enum Commands {
 
         #[arg(long, default_value = concat!("mdget/", env!("CARGO_PKG_VERSION")), help = "User-Agent header")]
         user_agent: String,
+
+        #[arg(short = 'H', long = "header", value_name = "HEADER", help = "Repeatable header Name:Value")]
+        header: Vec<String>,
+
+        #[arg(long = "cookie", value_name = "COOKIE", help = "Repeatable cookie Name=Value")]
+        cookie: Vec<String>,
+
+        #[arg(long = "bearer", value_name = "TOKEN", help = "Bearer token authorization")]
+        bearer: Option<String>,
+
+        #[arg(long = "json", conflicts_with = "no_frontmatter", help = "Output as structured JSON envelope")]
+        json: bool,
+
+        #[arg(long = "no-frontmatter", conflicts_with = "json", help = "Output markdown body only without frontmatter")]
+        no_frontmatter: bool,
     },
     #[command(about = "Generate shell completion script", disable_help_flag = true)]
     Completion {

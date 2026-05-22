@@ -53,17 +53,13 @@ _mdget() {
 
     case "${cmd}" in
         mdget)
-            opts="-H -l -h -V --home --log-level --log-file-enable --log-file-path --log-file-level --help --version command1 command2 fetch completion help"
+            opts="-l -h -V --home --log-level --log-file-enable --log-file-path --log-file-level --help --version command1 command2 fetch completion help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 1 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
             fi
             case "${prev}" in
                 --home)
-                    COMPREPLY=($(compgen -f "${cur}"))
-                    return 0
-                    ;;
-                -H)
                     COMPREPLY=($(compgen -f "${cur}"))
                     return 0
                     ;;
@@ -95,17 +91,13 @@ _mdget() {
             return 0
             ;;
         mdget__subcmd__command1)
-            opts="-H -l -h --home --log-level --log-file-enable --log-file-path --log-file-level --help"
+            opts="-l -h --home --log-level --log-file-enable --log-file-path --log-file-level --help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
             fi
             case "${prev}" in
                 --home)
-                    COMPREPLY=($(compgen -f "${cur}"))
-                    return 0
-                    ;;
-                -H)
                     COMPREPLY=($(compgen -f "${cur}"))
                     return 0
                     ;;
@@ -137,7 +129,7 @@ _mdget() {
             return 0
             ;;
         mdget__subcmd__command2)
-            opts="-a -H -l -h --arg --home --log-level --log-file-enable --log-file-path --log-file-level --help"
+            opts="-a -l -h --arg --home --log-level --log-file-enable --log-file-path --log-file-level --help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -152,10 +144,6 @@ _mdget() {
                     return 0
                     ;;
                 --home)
-                    COMPREPLY=($(compgen -f "${cur}"))
-                    return 0
-                    ;;
-                -H)
                     COMPREPLY=($(compgen -f "${cur}"))
                     return 0
                     ;;
@@ -187,7 +175,7 @@ _mdget() {
             return 0
             ;;
         mdget__subcmd__completion)
-            opts="-H -l --shell --home --log-level --log-file-enable --log-file-path --log-file-level"
+            opts="-l --shell --home --log-level --log-file-enable --log-file-path --log-file-level"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -198,10 +186,6 @@ _mdget() {
                     return 0
                     ;;
                 --home)
-                    COMPREPLY=($(compgen -f "${cur}"))
-                    return 0
-                    ;;
-                -H)
                     COMPREPLY=($(compgen -f "${cur}"))
                     return 0
                     ;;
@@ -233,7 +217,7 @@ _mdget() {
             return 0
             ;;
         mdget__subcmd__fetch)
-            opts="-o -H -l -h --output --compact --max-body-words --timeout --max-redirects --user-agent --home --log-level --log-file-enable --log-file-path --log-file-level --help <URL>"
+            opts="-o -H -l -h --output --compact --max-body-words --timeout --max-redirects --user-agent --header --cookie --bearer --json --no-frontmatter --home --log-level --log-file-enable --log-file-path --log-file-level --help <URL>"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -263,11 +247,23 @@ _mdget() {
                     COMPREPLY=($(compgen -f "${cur}"))
                     return 0
                     ;;
-                --home)
+                --header)
                     COMPREPLY=($(compgen -f "${cur}"))
                     return 0
                     ;;
                 -H)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                --cookie)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                --bearer)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                --home)
                     COMPREPLY=($(compgen -f "${cur}"))
                     return 0
                     ;;

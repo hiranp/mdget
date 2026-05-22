@@ -15,7 +15,6 @@ _mdget() {
 
     local context curcontext="$curcontext" state line
     _arguments "${_arguments_options[@]}" : \
-'-H+[]:PATH:_files' \
 '--home=[]:PATH:_files' \
 '-l+[]:LEVEL:(trace debug info warn error)' \
 '--log-level=[]:LEVEL:(trace debug info warn error)' \
@@ -37,7 +36,6 @@ _mdget() {
         case $line[1] in
             (command1)
 _arguments "${_arguments_options[@]}" : \
-'-H+[]:PATH:_files' \
 '--home=[]:PATH:_files' \
 '-l+[]:LEVEL:(trace debug info warn error)' \
 '--log-level=[]:LEVEL:(trace debug info warn error)' \
@@ -52,7 +50,6 @@ _arguments "${_arguments_options[@]}" : \
 _arguments "${_arguments_options[@]}" : \
 '-a+[An argument for command2]:ARG:_default' \
 '--arg=[An argument for command2]:ARG:_default' \
-'-H+[]:PATH:_files' \
 '--home=[]:PATH:_files' \
 '-l+[]:LEVEL:(trace debug info warn error)' \
 '--log-level=[]:LEVEL:(trace debug info warn error)' \
@@ -71,7 +68,10 @@ _arguments "${_arguments_options[@]}" : \
 '--timeout=[Request timeout in seconds]:TIMEOUT:_default' \
 '--max-redirects=[Maximum redirects to follow]:MAX_REDIRECTS:_default' \
 '--user-agent=[User-Agent header]:USER_AGENT:_default' \
-'-H+[]:PATH:_files' \
+'*-H+[Repeatable header Name\:Value]:HEADER:_default' \
+'*--header=[Repeatable header Name\:Value]:HEADER:_default' \
+'*--cookie=[Repeatable cookie Name=Value]:COOKIE:_default' \
+'--bearer=[Bearer token authorization]:TOKEN:_default' \
 '--home=[]:PATH:_files' \
 '-l+[]:LEVEL:(trace debug info warn error)' \
 '--log-level=[]:LEVEL:(trace debug info warn error)' \
@@ -79,6 +79,8 @@ _arguments "${_arguments_options[@]}" : \
 '--log-file-path=[]:PATH:_files' \
 '--log-file-level=[]:LEVEL:(trace debug info warn error)' \
 '--compact[Reduce body output to headings and short paragraph summaries]' \
+'(--no-frontmatter)--json[Output as structured JSON envelope]' \
+'(--json)--no-frontmatter[Output markdown body only without frontmatter]' \
 '-h[Print help]' \
 '--help[Print help]' \
 ':url -- URL to fetch:_default' \
@@ -87,7 +89,6 @@ _arguments "${_arguments_options[@]}" : \
 (completion)
 _arguments "${_arguments_options[@]}" : \
 '--shell=[The shell to generate the completions for]:SHELL:(bash elvish fish powershell zsh)' \
-'-H+[]:PATH:_files' \
 '--home=[]:PATH:_files' \
 '-l+[]:LEVEL:(trace debug info warn error)' \
 '--log-level=[]:LEVEL:(trace debug info warn error)' \
