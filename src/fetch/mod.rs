@@ -5,21 +5,31 @@ mod convert;
 mod envelope;
 mod extract;
 mod http;
+mod reduce;
 
 use miette::Result;
 
 use self::envelope::{ErrorEnvelope, SuccessEnvelope};
 use self::http::HttpClient;
+use self::reduce::reduce_markdown;
 
 pub struct FetchOptions {
     pub timeout_secs: u64,
     pub max_redirects: u32,
     pub user_agent: String,
+    pub compact: bool,
+    pub max_body_words: Option<usize>,
 }
 
 impl Default for FetchOptions {
     fn default() -> Self {
-        Self { timeout_secs: 30, max_redirects: 5, user_agent: "mdget/0.2.0".to_string() }
+        Self {
+            timeout_secs: 30,
+            max_redirects: 5,
+            user_agent: "mdget/0.2.0".to_string(),
+            compact: false,
+            max_body_words: None,
+        }
     }
 }
 
@@ -89,17 +99,23 @@ pub async fn fetch_url(url: &str, options: FetchOptions) -> Result<String> {
         }
     };
 
+    let reduced = reduce_markdown(&markdown, options.compact, options.max_body_words);
+
     // 7. Build SuccessEnvelope
     let envelope = SuccessEnvelope::new(
         response.final_url,
         response.status,
         article.title,
         article.word_count,
+        reduced.body_word_count,
+        options.compact,
+        options.max_body_words,
+        reduced.truncated,
         if response.redirect_chain.is_empty() { None } else { Some(response.redirect_chain) },
     );
 
     // 8. Return frontmatter + markdown
-    envelope.to_output(&markdown)
+    envelope.to_output(&reduced.body)
 }
 
 fn extract_charset_from_headers(content_type: Option<&str>) -> Option<String> {
@@ -174,6 +190,19 @@ mod tests {
         assert_eq!(opts.timeout_secs, 30);
         assert_eq!(opts.max_redirects, 5);
         assert!(opts.user_agent.starts_with("mdget/"));
+        assert!(!opts.compact);
+        assert_eq!(opts.max_body_words, None);
+    }
+
+    #[test]
+    fn compact_reduction_keeps_headings_and_shortens_body() {
+        let markdown = "# Title\n\nThis is the first paragraph with several words.\n\n## Details\n\nMore text here with another sentence.\n\n```rust\nfn example() {}\n```";
+        let reduced = super::reduce::reduce_markdown(markdown, true, None);
+
+        assert!(reduced.body.contains("# Title"));
+        assert!(reduced.body.contains("## Details"));
+        assert!(!reduced.body.contains("fn example"));
+        assert!(reduced.body.split_whitespace().count() < markdown.split_whitespace().count());
     }
 
     #[test]

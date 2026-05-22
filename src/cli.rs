@@ -68,6 +68,12 @@ pub enum Commands {
         #[arg(short, long, help = "Output to file instead of stdout")]
         output: Option<PathBuf>,
 
+        #[arg(long, help = "Reduce body output to headings and short paragraph summaries")]
+        compact: bool,
+
+        #[arg(long, value_name = "WORDS", help = "Hard cap the rendered body to this many words")]
+        max_body_words: Option<usize>,
+
         #[arg(long, default_value = "30", help = "Request timeout in seconds")]
         timeout: u64,
 
