@@ -1,6 +1,6 @@
 use config::{Config, Environment, File};
 use directories::ProjectDirs;
-use miette::{miette, IntoDiagnostic, Result};
+use miette::{IntoDiagnostic, Result, miette};
 use serde::{Deserialize, Serialize};
 use std::{env, path::PathBuf};
 
@@ -36,17 +36,14 @@ impl GlobalConfig {
             None => {
                 return Err(miette!(
                     "error getting configurations path following XDG base directory"
-                ))
+                ));
             }
         };
 
-        let home_path: PathBuf =
-            cli.home
-                .clone()
-                .unwrap_or_else(|| match env::var("MDGET_HOME") {
-                    Ok(v) => PathBuf::from(v),
-                    Err(_) => project_dir.config_dir().to_path_buf(),
-                });
+        let home_path: PathBuf = cli.home.clone().unwrap_or_else(|| match env::var("MDGET_HOME") {
+            Ok(v) => PathBuf::from(v),
+            Err(_) => project_dir.config_dir().to_path_buf(),
+        });
 
         let system_config = format!("/etc/{APPLICATION}/config.toml");
         let user_config = home_path.join("config.toml");
@@ -58,34 +55,23 @@ impl GlobalConfig {
             .into_diagnostic()?
             .set_default(
                 "log.file.path",
-                project_dir
-                    .cache_dir()
-                    .to_str()
-                    .ok_or(miette!("error getting cache path"))?,
+                project_dir.cache_dir().to_str().ok_or(miette!("error getting cache path"))?,
             )
             .into_diagnostic()?
             .set_default("log.file.level", "info")
             .into_diagnostic()?
             .add_source(File::with_name(&system_config).required(false))
             .add_source(File::from(user_config).required(false))
-            .add_source(
-                Environment::with_prefix("MDGET")
-                    .separator("_")
-                    .ignore_empty(true),
-            );
+            .add_source(Environment::with_prefix("MDGET").separator("_").ignore_empty(true));
 
         config_builder = if let Some(log_level) = cli.log_level {
-            config_builder
-                .set_override("log.level", log_level.as_str())
-                .into_diagnostic()?
+            config_builder.set_override("log.level", log_level.as_str()).into_diagnostic()?
         } else {
             config_builder
         };
 
         config_builder = if let Some(log_file_enable) = cli.log_file_enable {
-            config_builder
-                .set_override("log.file.enabled", log_file_enable)
-                .into_diagnostic()?
+            config_builder.set_override("log.file.enabled", log_file_enable).into_diagnostic()?
         } else {
             config_builder
         };
@@ -106,10 +92,6 @@ impl GlobalConfig {
             config_builder
         };
 
-        config_builder
-            .build()
-            .into_diagnostic()?
-            .try_deserialize()
-            .into_diagnostic()
+        config_builder.build().into_diagnostic()?.try_deserialize().into_diagnostic()
     }
 }

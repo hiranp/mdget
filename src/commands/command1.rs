@@ -1,5 +1,5 @@
 use miette::Result;
-use tokio::time::{sleep, Duration};
+use tokio::time::{Duration, sleep};
 use tokio_graceful_shutdown::SubsystemHandle;
 use tracing::info;
 

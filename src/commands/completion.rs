@@ -1,5 +1,5 @@
 use clap::CommandFactory;
-use clap_complete::{generate, Generator};
+use clap_complete::{Generator, generate};
 use std::ffi::OsStr;
 use std::{env, path::Path};
 
