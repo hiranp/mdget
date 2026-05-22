@@ -254,3 +254,40 @@ async fn fetch_pdf_extraction_failure() {
     assert_eq!(frontmatter["error"], Value::String("pdf_extraction_failed".to_string()));
     assert!(body.trim().is_empty());
 }
+
+#[tokio::test]
+async fn fetch_html_metadata_in_envelope() {
+    let mut server = mockito::Server::new_async().await;
+    let html = r#"
+        <html>
+            <head>
+                <title>Metadata Page</title>
+                <meta name="description" content="This description must be extracted.">
+                <link rel="canonical" href="https://example.com/canonical-url">
+            </head>
+            <body>
+                <article><p>Some interesting article content.</p></article>
+            </body>
+        </html>
+    "#;
+
+    let _mock = server
+        .mock("GET", "/metadata")
+        .with_status(200)
+        .with_header("content-type", "text/html; charset=utf-8")
+        .with_body(html)
+        .create_async()
+        .await;
+
+    let url = format!("{}/metadata", server.url());
+    let output = fetch_url(&url, FetchOptions::default()).await.expect("fetch output");
+
+    let (frontmatter, body) = parse_frontmatter_and_body(&output);
+
+    assert_eq!(frontmatter["success"], Value::Bool(true));
+    assert_eq!(frontmatter["title"], Value::String("Metadata Page".to_string()));
+    assert_eq!(frontmatter["description"], Value::String("This description must be extracted.".to_string()));
+    assert_eq!(frontmatter["canonical_url"], Value::String("https://example.com/canonical-url".to_string()));
+    assert!(body.contains("Some interesting article content."));
+}
+

@@ -15,6 +15,7 @@ pub async fn configure_log(log_config: &Log) -> Result<Option<WorkerGuard>> {
     let mut is_fall_back = false;
 
     let stdout_subscriber = tracing_subscriber::fmt::layer()
+        .with_writer(std::io::stderr)
         .with_file(true)
         .with_line_number(true)
         .with_filter(LevelFilter::from_str(&log_config.level).unwrap_or_else(|_| {

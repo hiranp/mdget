@@ -6,6 +6,7 @@ mod envelope;
 mod extract;
 mod handlers;
 mod http;
+mod output;
 mod reduce;
 pub mod request;
 mod router;
@@ -90,6 +91,8 @@ pub async fn fetch_url(url: &str, options: FetchOptions) -> Result<String> {
                 url: response.final_url,
                 status: response.status,
                 title: handler_res.title,
+                description: None,
+                canonical_url: None,
                 word_count: handler_res.word_count,
                 body_word_count: handler_res.body_word_count,
                 render_mode: if options.compact { "compact".to_string() } else { "full".to_string() },
@@ -103,7 +106,7 @@ pub async fn fetch_url(url: &str, options: FetchOptions) -> Result<String> {
                 },
             };
 
-            envelope.to_output(&handler_res.body)
+            output::format_output(&envelope, &handler_res.body, options.output_mode)
         }
         router::HandlerKind::Json => {
             let handler_res = handlers::json::handle(&response.body, response.content_type.as_deref());
@@ -113,6 +116,8 @@ pub async fn fetch_url(url: &str, options: FetchOptions) -> Result<String> {
                 url: response.final_url,
                 status: response.status,
                 title: handler_res.title,
+                description: None,
+                canonical_url: None,
                 word_count: handler_res.word_count,
                 body_word_count: handler_res.body_word_count,
                 render_mode: if options.compact { "compact".to_string() } else { "full".to_string() },
@@ -126,7 +131,7 @@ pub async fn fetch_url(url: &str, options: FetchOptions) -> Result<String> {
                 },
             };
 
-            envelope.to_output(&handler_res.body)
+            output::format_output(&envelope, &handler_res.body, options.output_mode)
         }
         router::HandlerKind::Feed => {
             let handler_res = handlers::feed::handle(&response.body, response.content_type.as_deref());
@@ -136,6 +141,8 @@ pub async fn fetch_url(url: &str, options: FetchOptions) -> Result<String> {
                 url: response.final_url,
                 status: response.status,
                 title: handler_res.title,
+                description: None,
+                canonical_url: None,
                 word_count: handler_res.word_count,
                 body_word_count: handler_res.body_word_count,
                 render_mode: if options.compact { "compact".to_string() } else { "full".to_string() },
@@ -149,7 +156,7 @@ pub async fn fetch_url(url: &str, options: FetchOptions) -> Result<String> {
                 },
             };
 
-            envelope.to_output(&handler_res.body)
+            output::format_output(&envelope, &handler_res.body, options.output_mode)
         }
         router::HandlerKind::Pdf => {
             let handler_res = match handlers::pdf::handle(&response.body) {
@@ -169,6 +176,8 @@ pub async fn fetch_url(url: &str, options: FetchOptions) -> Result<String> {
                 url: response.final_url,
                 status: response.status,
                 title: handler_res.title,
+                description: None,
+                canonical_url: None,
                 word_count: handler_res.word_count,
                 body_word_count: handler_res.body_word_count,
                 render_mode: if options.compact { "compact".to_string() } else { "full".to_string() },
@@ -182,7 +191,7 @@ pub async fn fetch_url(url: &str, options: FetchOptions) -> Result<String> {
                 },
             };
 
-            envelope.to_output(&handler_res.body)
+            output::format_output(&envelope, &handler_res.body, options.output_mode)
         }
         router::HandlerKind::Html | router::HandlerKind::Unknown => {
             // Existing HTML pipeline (untouched for exact baseline compatibility)
@@ -229,6 +238,8 @@ pub async fn fetch_url(url: &str, options: FetchOptions) -> Result<String> {
                 url: response.final_url,
                 status: response.status,
                 title: article.title,
+                description: article.description,
+                canonical_url: article.canonical_url,
                 word_count: article.word_count,
                 body_word_count: reduced.body_word_count,
                 render_mode: if options.compact { "compact".to_string() } else { "full".to_string() },
@@ -243,7 +254,7 @@ pub async fn fetch_url(url: &str, options: FetchOptions) -> Result<String> {
             };
 
             // 8. Return frontmatter + markdown
-            envelope.to_output(&reduced.body)
+            output::format_output(&envelope, &reduced.body, options.output_mode)
         }
     }
 }

@@ -5,6 +5,8 @@ use scraper::{ElementRef, Html, Selector};
 
 pub struct ExtractedArticle {
     pub title: Option<String>,
+    pub description: Option<String>,
+    pub canonical_url: Option<String>,
     pub content_html: String,
     pub word_count: usize,
 }
@@ -21,11 +23,19 @@ impl ReadabilityExtractor {
     pub fn extract(&self, html: &str) -> Result<ExtractedArticle> {
         let document = Html::parse_document(html);
         let title = self.extract_title(&document);
+        let description = self.extract_description(&document);
+        let canonical_url = self.extract_canonical_url(&document);
         let article_html = self.find_best_article_html(&document)?;
         let cleaned_html = self.clean_fragment(&article_html);
         let word_count = self.count_words(&cleaned_html);
 
-        Ok(ExtractedArticle { title, content_html: cleaned_html, word_count })
+        Ok(ExtractedArticle {
+            title,
+            description,
+            canonical_url,
+            content_html: cleaned_html,
+            word_count,
+        })
     }
 
     fn extract_title(&self, doc: &Html) -> Option<String> {
@@ -42,6 +52,42 @@ impl ReadabilityExtractor {
             .next()
             .map(|h1| h1.text().collect::<String>().trim().to_string())
             .filter(|text| !text.is_empty())
+    }
+
+    fn extract_description(&self, doc: &Html) -> Option<String> {
+        let selector = Selector::parse("meta[name='description']").ok()?;
+        if let Some(elem) = doc.select(&selector).next() {
+            let desc = elem.value().attr("content").map(|s| s.trim().to_string());
+            if desc.as_deref().is_some_and(|s| !s.is_empty()) {
+                return desc;
+            }
+        }
+        let og_selector = Selector::parse("meta[property='og:description']").ok()?;
+        if let Some(elem) = doc.select(&og_selector).next() {
+            let desc = elem.value().attr("content").map(|s| s.trim().to_string());
+            if desc.as_deref().is_some_and(|s| !s.is_empty()) {
+                return desc;
+            }
+        }
+        None
+    }
+
+    fn extract_canonical_url(&self, doc: &Html) -> Option<String> {
+        let selector = Selector::parse("link[rel='canonical']").ok()?;
+        if let Some(elem) = doc.select(&selector).next() {
+            let href = elem.value().attr("href").map(|s| s.trim().to_string());
+            if href.as_deref().is_some_and(|s| !s.is_empty()) {
+                return href;
+            }
+        }
+        let og_selector = Selector::parse("meta[property='og:url']").ok()?;
+        if let Some(elem) = doc.select(&og_selector).next() {
+            let href = elem.value().attr("content").map(|s| s.trim().to_string());
+            if href.as_deref().is_some_and(|s| !s.is_empty()) {
+                return href;
+            }
+        }
+        None
     }
 
     fn find_best_article_html(&self, doc: &Html) -> Result<String> {
@@ -291,5 +337,43 @@ mod tests {
         assert!(!article.content_html.contains("Subscribe now"));
         assert!(!article.content_html.contains("Top stories"));
         assert!(!article.content_html.contains("Comments"));
+    }
+
+    #[test]
+    fn extracts_description_and_canonical_url() {
+        let html = r#"
+            <html>
+                <head>
+                    <title>Test Page</title>
+                    <meta name="description" content="This is a test description.">
+                    <link rel="canonical" href="https://example.com/canonical">
+                </head>
+                <body>
+                    <article><p>Hello world</p></article>
+                </body>
+            </html>
+        "#;
+        let article = extract_article(html).expect("extract article");
+        assert_eq!(article.description.as_deref(), Some("This is a test description."));
+        assert_eq!(article.canonical_url.as_deref(), Some("https://example.com/canonical"));
+    }
+
+    #[test]
+    fn extracts_og_description_and_url_fallback() {
+        let html = r#"
+            <html>
+                <head>
+                    <title>Test Page</title>
+                    <meta property="og:description" content="OG description fallback">
+                    <meta property="og:url" content="https://example.com/og-url">
+                </head>
+                <body>
+                    <article><p>Hello world</p></article>
+                </body>
+            </html>
+        "#;
+        let article = extract_article(html).expect("extract article");
+        assert_eq!(article.description.as_deref(), Some("OG description fallback"));
+        assert_eq!(article.canonical_url.as_deref(), Some("https://example.com/og-url"));
     }
 }
