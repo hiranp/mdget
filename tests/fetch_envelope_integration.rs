@@ -108,3 +108,149 @@ async fn fetch_success_includes_redirect_chain_and_final_url() {
 
     assert!(body.contains("# Test Article"));
 }
+
+#[tokio::test]
+async fn fetch_json_content() {
+    let mut server = mockito::Server::new_async().await;
+    let json_body = r#"{"name": "mdget", "features": ["markdown", "html", "json"]}"#;
+
+    let _mock = server
+        .mock("GET", "/data.json")
+        .with_status(200)
+        .with_header("content-type", "application/json")
+        .with_body(json_body)
+        .create_async()
+        .await;
+
+    let url = format!("{}/data.json", server.url());
+    let output = fetch_url(&url, FetchOptions::default()).await.expect("json output");
+
+    let (frontmatter, body) = parse_frontmatter_and_body(&output);
+
+    assert_eq!(frontmatter["success"], Value::Bool(true));
+    assert_eq!(frontmatter["status"], Value::Number(200.into()));
+    assert_eq!(frontmatter["url"], Value::String(url));
+
+    assert!(body.contains("```json"));
+    assert!(body.contains("\"name\": \"mdget\""));
+    assert!(body.contains("\"features\": ["));
+}
+
+#[tokio::test]
+async fn fetch_plain_text_content() {
+    let mut server = mockito::Server::new_async().await;
+    let text_body = "This is a simple plain text response with a few words.";
+
+    let _mock = server
+        .mock("GET", "/doc.txt")
+        .with_status(200)
+        .with_header("content-type", "text/plain")
+        .with_body(text_body)
+        .create_async()
+        .await;
+
+    let url = format!("{}/doc.txt", server.url());
+    let output = fetch_url(&url, FetchOptions::default()).await.expect("plain text output");
+
+    let (frontmatter, body) = parse_frontmatter_and_body(&output);
+
+    assert_eq!(frontmatter["success"], Value::Bool(true));
+    assert_eq!(frontmatter["status"], Value::Number(200.into()));
+    assert_eq!(frontmatter["url"], Value::String(url.clone()));
+    assert_eq!(body.trim(), text_body);
+
+    // Let's test with max_body_words option
+    let options = FetchOptions {
+        max_body_words: Some(5),
+        ..Default::default()
+    };
+    let output_truncated = fetch_url(&url, options).await.expect("plain text output");
+    let (frontmatter_truncated, body_truncated) = parse_frontmatter_and_body(&output_truncated);
+
+    assert_eq!(frontmatter_truncated["body_truncated"], Value::Bool(true));
+    assert_eq!(body_truncated.trim(), "This is a simple plain");
+}
+
+#[tokio::test]
+async fn fetch_feed_content() {
+    let mut server = mockito::Server::new_async().await;
+    let atom_feed = r#"<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>Example Feed</title>
+  <entry>
+    <title>First Entry</title>
+    <link href="http://example.org/1"/>
+    <updated>2026-05-22T00:00:00Z</updated>
+    <summary>This is the summary of the first entry.</summary>
+  </entry>
+</feed>"#;
+
+    let _mock = server
+        .mock("GET", "/feed.xml")
+        .with_status(200)
+        .with_header("content-type", "application/atom+xml")
+        .with_body(atom_feed)
+        .create_async()
+        .await;
+
+    let url = format!("{}/feed.xml", server.url());
+    let output = fetch_url(&url, FetchOptions::default()).await.expect("feed output");
+
+    let (frontmatter, body) = parse_frontmatter_and_body(&output);
+
+    assert_eq!(frontmatter["success"], Value::Bool(true));
+    assert_eq!(frontmatter["title"], Value::String("Example Feed".to_string()));
+    assert!(body.contains("# Example Feed"));
+    assert!(body.contains("## First Entry"));
+    assert!(body.contains("- **Link:** http://example.org/1"));
+    assert!(body.contains("- **Summary:** This is the summary of the first entry."));
+}
+
+#[tokio::test]
+async fn fetch_non_feed_xml_content() {
+    let mut server = mockito::Server::new_async().await;
+    let xml_content = r#"<?xml version="1.0" encoding="utf-8"?>
+<config>
+  <setting name="enabled">true</setting>
+</config>"#;
+
+    let _mock = server
+        .mock("GET", "/config.xml")
+        .with_status(200)
+        .with_header("content-type", "application/xml")
+        .with_body(xml_content)
+        .create_async()
+        .await;
+
+    let url = format!("{}/config.xml", server.url());
+    let output = fetch_url(&url, FetchOptions::default()).await.expect("xml output");
+
+    let (frontmatter, body) = parse_frontmatter_and_body(&output);
+
+    assert_eq!(frontmatter["success"], Value::Bool(true));
+    assert_eq!(frontmatter["title"], Value::Null);
+    assert!(body.contains("```xml"));
+    assert!(body.contains("<config>"));
+}
+
+#[tokio::test]
+async fn fetch_pdf_extraction_failure() {
+    let mut server = mockito::Server::new_async().await;
+
+    let _mock = server
+        .mock("GET", "/invalid.pdf")
+        .with_status(200)
+        .with_header("content-type", "application/pdf")
+        .with_body(b"not a valid pdf content")
+        .create_async()
+        .await;
+
+    let url = format!("{}/invalid.pdf", server.url());
+    let output = fetch_url(&url, FetchOptions::default()).await.expect("pdf output");
+
+    let (frontmatter, body) = parse_frontmatter_and_body(&output);
+
+    assert_eq!(frontmatter["success"], Value::Bool(false));
+    assert_eq!(frontmatter["error"], Value::String("pdf_extraction_failed".to_string()));
+    assert!(body.trim().is_empty());
+}
