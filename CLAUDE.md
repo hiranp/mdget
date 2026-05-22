@@ -72,7 +72,7 @@ mdget is a high-performance Rust rewrite of mdurl (TypeScript), designed as a cu
 | `justfile` | Task automation |
 ## Package Metadata
 - **Name:** mdget
-- **Version:** 0.2.0
+- **Version:** 0.3.0
 - **Description:** Agent-first curl alternative
 - **License:** MIT
 - **Repository:** https://github.com/hiranp/mdget
