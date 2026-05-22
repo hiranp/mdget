@@ -1,0 +1,210 @@
+#compdef mdget
+
+autoload -U is-at-least
+
+_mdget() {
+    typeset -A opt_args
+    typeset -a _arguments_options
+    local ret=1
+
+    if is-at-least 5.2; then
+        _arguments_options=(-s -S -C)
+    else
+        _arguments_options=(-s -C)
+    fi
+
+    local context curcontext="$curcontext" state line
+    _arguments "${_arguments_options[@]}" : \
+'-H+[]:PATH:_files' \
+'--home=[]:PATH:_files' \
+'-l+[]:LEVEL:(trace debug info warn error)' \
+'--log-level=[]:LEVEL:(trace debug info warn error)' \
+'--log-file-enable=[]:BOOL:(true false)' \
+'--log-file-path=[]:PATH:_files' \
+'--log-file-level=[]:LEVEL:(trace debug info warn error)' \
+'-h[Print help]' \
+'--help[Print help]' \
+'-V[Print version]' \
+'--version[Print version]' \
+":: :_mdget_commands" \
+"*::: :->mdget" \
+&& ret=0
+    case $state in
+    (mdget)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:mdget-command-$line[1]:"
+        case $line[1] in
+            (command1)
+_arguments "${_arguments_options[@]}" : \
+'-H+[]:PATH:_files' \
+'--home=[]:PATH:_files' \
+'-l+[]:LEVEL:(trace debug info warn error)' \
+'--log-level=[]:LEVEL:(trace debug info warn error)' \
+'--log-file-enable=[]:BOOL:(true false)' \
+'--log-file-path=[]:PATH:_files' \
+'--log-file-level=[]:LEVEL:(trace debug info warn error)' \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(command2)
+_arguments "${_arguments_options[@]}" : \
+'-a+[An argument for command2]:ARG:_default' \
+'--arg=[An argument for command2]:ARG:_default' \
+'-H+[]:PATH:_files' \
+'--home=[]:PATH:_files' \
+'-l+[]:LEVEL:(trace debug info warn error)' \
+'--log-level=[]:LEVEL:(trace debug info warn error)' \
+'--log-file-enable=[]:BOOL:(true false)' \
+'--log-file-path=[]:PATH:_files' \
+'--log-file-level=[]:LEVEL:(trace debug info warn error)' \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(fetch)
+_arguments "${_arguments_options[@]}" : \
+'-o+[Output to file instead of stdout]:OUTPUT:_files' \
+'--output=[Output to file instead of stdout]:OUTPUT:_files' \
+'--timeout=[Request timeout in seconds]:TIMEOUT:_default' \
+'--max-redirects=[Maximum redirects to follow]:MAX_REDIRECTS:_default' \
+'--user-agent=[User-Agent header]:USER_AGENT:_default' \
+'-H+[]:PATH:_files' \
+'--home=[]:PATH:_files' \
+'-l+[]:LEVEL:(trace debug info warn error)' \
+'--log-level=[]:LEVEL:(trace debug info warn error)' \
+'--log-file-enable=[]:BOOL:(true false)' \
+'--log-file-path=[]:PATH:_files' \
+'--log-file-level=[]:LEVEL:(trace debug info warn error)' \
+'-h[Print help]' \
+'--help[Print help]' \
+':url -- URL to fetch:_default' \
+&& ret=0
+;;
+(completion)
+_arguments "${_arguments_options[@]}" : \
+'--shell=[The shell to generate the completions for]:SHELL:(bash elvish fish powershell zsh)' \
+'-H+[]:PATH:_files' \
+'--home=[]:PATH:_files' \
+'-l+[]:LEVEL:(trace debug info warn error)' \
+'--log-level=[]:LEVEL:(trace debug info warn error)' \
+'--log-file-enable=[]:BOOL:(true false)' \
+'--log-file-path=[]:PATH:_files' \
+'--log-file-level=[]:LEVEL:(trace debug info warn error)' \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+":: :_mdget__subcmd__help_commands" \
+"*::: :->help" \
+&& ret=0
+
+    case $state in
+    (help)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:mdget-help-command-$line[1]:"
+        case $line[1] in
+            (command1)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(command2)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(fetch)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(completion)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+        esac
+    ;;
+esac
+}
+
+(( $+functions[_mdget_commands] )) ||
+_mdget_commands() {
+    local commands; commands=(
+'command1:Run command1' \
+'command2:Run command2' \
+'fetch:Fetch URL and convert to markdown' \
+'completion:Generate shell completion script' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'mdget commands' commands "$@"
+}
+(( $+functions[_mdget__subcmd__command1_commands] )) ||
+_mdget__subcmd__command1_commands() {
+    local commands; commands=()
+    _describe -t commands 'mdget command1 commands' commands "$@"
+}
+(( $+functions[_mdget__subcmd__command2_commands] )) ||
+_mdget__subcmd__command2_commands() {
+    local commands; commands=()
+    _describe -t commands 'mdget command2 commands' commands "$@"
+}
+(( $+functions[_mdget__subcmd__completion_commands] )) ||
+_mdget__subcmd__completion_commands() {
+    local commands; commands=()
+    _describe -t commands 'mdget completion commands' commands "$@"
+}
+(( $+functions[_mdget__subcmd__fetch_commands] )) ||
+_mdget__subcmd__fetch_commands() {
+    local commands; commands=()
+    _describe -t commands 'mdget fetch commands' commands "$@"
+}
+(( $+functions[_mdget__subcmd__help_commands] )) ||
+_mdget__subcmd__help_commands() {
+    local commands; commands=(
+'command1:Run command1' \
+'command2:Run command2' \
+'fetch:Fetch URL and convert to markdown' \
+'completion:Generate shell completion script' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'mdget help commands' commands "$@"
+}
+(( $+functions[_mdget__subcmd__help__subcmd__command1_commands] )) ||
+_mdget__subcmd__help__subcmd__command1_commands() {
+    local commands; commands=()
+    _describe -t commands 'mdget help command1 commands' commands "$@"
+}
+(( $+functions[_mdget__subcmd__help__subcmd__command2_commands] )) ||
+_mdget__subcmd__help__subcmd__command2_commands() {
+    local commands; commands=()
+    _describe -t commands 'mdget help command2 commands' commands "$@"
+}
+(( $+functions[_mdget__subcmd__help__subcmd__completion_commands] )) ||
+_mdget__subcmd__help__subcmd__completion_commands() {
+    local commands; commands=()
+    _describe -t commands 'mdget help completion commands' commands "$@"
+}
+(( $+functions[_mdget__subcmd__help__subcmd__fetch_commands] )) ||
+_mdget__subcmd__help__subcmd__fetch_commands() {
+    local commands; commands=()
+    _describe -t commands 'mdget help fetch commands' commands "$@"
+}
+(( $+functions[_mdget__subcmd__help__subcmd__help_commands] )) ||
+_mdget__subcmd__help__subcmd__help_commands() {
+    local commands; commands=()
+    _describe -t commands 'mdget help help commands' commands "$@"
+}
+
+if [ "$funcstack[1]" = "_mdget" ]; then
+    _mdget "$@"
+else
+    compdef _mdget mdget
+fi
