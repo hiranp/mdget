@@ -54,10 +54,4 @@ install:
 publish: check
   cargo publish
 
-# Build cross-platform release artifacts locally with cargo-dist.
-dist:
-  cargo dist build
 
-# Create and announce release artifacts with cargo-dist.
-dist-host:
-  cargo dist host
