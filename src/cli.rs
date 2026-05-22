@@ -60,6 +60,23 @@ pub enum Commands {
         #[arg(short, long, value_name = "ARG", help = "An argument for command2")]
         arg: Option<String>,
     },
+    #[command(about = "Fetch URL and convert to markdown")]
+    Fetch {
+        #[arg(value_name = "URL", help = "URL to fetch")]
+        url: String,
+
+        #[arg(short, long, help = "Output to file instead of stdout")]
+        output: Option<PathBuf>,
+
+        #[arg(long, default_value = "30", help = "Request timeout in seconds")]
+        timeout: u64,
+
+        #[arg(long, default_value = "5", help = "Maximum redirects to follow")]
+        max_redirects: u32,
+
+        #[arg(long, default_value = "mdget/0.2.0", help = "User-Agent header")]
+        user_agent: String,
+    },
     #[command(about = "Generate shell completion script", disable_help_flag = true)]
     Completion {
         #[arg(
