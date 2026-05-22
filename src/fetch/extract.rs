@@ -9,12 +9,12 @@ pub struct ExtractedArticle {
     pub word_count: usize,
 }
 
-pub struct ReadabilityExtractor {
-    pub min_score: f64,
+struct ReadabilityExtractor {
+    min_score: f64,
 }
 
 impl ReadabilityExtractor {
-    pub fn new(min_score: f64) -> Self {
+    fn new(min_score: f64) -> Self {
         Self { min_score }
     }
 
@@ -185,7 +185,8 @@ impl ReadabilityExtractor {
             out.push(' ');
             out.push_str(k);
             out.push_str("=\"");
-            out.push_str(v);
+            // Escape attribute values to prevent attribute injection
+            out.push_str(&v.replace('&', "&amp;").replace('"', "&quot;"));
             out.push('"');
         }
         out.push('>');
