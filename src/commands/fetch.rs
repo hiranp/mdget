@@ -61,7 +61,7 @@ pub async fn run(
             tracing::info!("Output written to: {}", path.display());
         }
         None => {
-            println!("{}", result);
+            print!("{}", result);
         }
     }
 

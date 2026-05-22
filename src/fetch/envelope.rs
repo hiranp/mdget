@@ -41,6 +41,10 @@ pub struct SuccessEnvelope {
     pub url: String,
     pub status: u16,
     pub title: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub canonical_url: Option<String>,
     pub word_count: usize,
     pub body_word_count: usize,
     pub render_mode: String,
