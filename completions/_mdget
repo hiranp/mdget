@@ -67,6 +67,7 @@ _arguments "${_arguments_options[@]}" : \
 _arguments "${_arguments_options[@]}" : \
 '-o+[Output to file instead of stdout]:OUTPUT:_files' \
 '--output=[Output to file instead of stdout]:OUTPUT:_files' \
+'--max-body-words=[Hard cap the rendered body to this many words]:WORDS:_default' \
 '--timeout=[Request timeout in seconds]:TIMEOUT:_default' \
 '--max-redirects=[Maximum redirects to follow]:MAX_REDIRECTS:_default' \
 '--user-agent=[User-Agent header]:USER_AGENT:_default' \
@@ -77,6 +78,7 @@ _arguments "${_arguments_options[@]}" : \
 '--log-file-enable=[]:BOOL:(true false)' \
 '--log-file-path=[]:PATH:_files' \
 '--log-file-level=[]:LEVEL:(trace debug info warn error)' \
+'--compact[Reduce body output to headings and short paragraph summaries]' \
 '-h[Print help]' \
 '--help[Print help]' \
 ':url -- URL to fetch:_default' \

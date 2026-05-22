@@ -62,6 +62,7 @@ set edit:completion:arg-completer[mdget] = {|@words|
         &'mdget;fetch'= {
             cand -o 'Output to file instead of stdout'
             cand --output 'Output to file instead of stdout'
+            cand --max-body-words 'Hard cap the rendered body to this many words'
             cand --timeout 'Request timeout in seconds'
             cand --max-redirects 'Maximum redirects to follow'
             cand --user-agent 'User-Agent header'
@@ -72,6 +73,7 @@ set edit:completion:arg-completer[mdget] = {|@words|
             cand --log-file-enable 'log-file-enable'
             cand --log-file-path 'log-file-path'
             cand --log-file-level 'log-file-level'
+            cand --compact 'Reduce body output to headings and short paragraph summaries'
             cand -h 'Print help'
             cand --help 'Print help'
         }

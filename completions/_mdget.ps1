@@ -68,6 +68,7 @@ Register-ArgumentCompleter -Native -CommandName 'mdget' -ScriptBlock {
         'mdget;fetch' {
             [CompletionResult]::new('-o', '-o', [CompletionResultType]::ParameterName, 'Output to file instead of stdout')
             [CompletionResult]::new('--output', '--output', [CompletionResultType]::ParameterName, 'Output to file instead of stdout')
+            [CompletionResult]::new('--max-body-words', '--max-body-words', [CompletionResultType]::ParameterName, 'Hard cap the rendered body to this many words')
             [CompletionResult]::new('--timeout', '--timeout', [CompletionResultType]::ParameterName, 'Request timeout in seconds')
             [CompletionResult]::new('--max-redirects', '--max-redirects', [CompletionResultType]::ParameterName, 'Maximum redirects to follow')
             [CompletionResult]::new('--user-agent', '--user-agent', [CompletionResultType]::ParameterName, 'User-Agent header')
@@ -78,6 +79,7 @@ Register-ArgumentCompleter -Native -CommandName 'mdget' -ScriptBlock {
             [CompletionResult]::new('--log-file-enable', '--log-file-enable', [CompletionResultType]::ParameterName, 'log-file-enable')
             [CompletionResult]::new('--log-file-path', '--log-file-path', [CompletionResultType]::ParameterName, 'log-file-path')
             [CompletionResult]::new('--log-file-level', '--log-file-level', [CompletionResultType]::ParameterName, 'log-file-level')
+            [CompletionResult]::new('--compact', '--compact', [CompletionResultType]::ParameterName, 'Reduce body output to headings and short paragraph summaries')
             [CompletionResult]::new('-h', '-h', [CompletionResultType]::ParameterName, 'Print help')
             [CompletionResult]::new('--help', '--help', [CompletionResultType]::ParameterName, 'Print help')
             break
