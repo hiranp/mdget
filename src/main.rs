@@ -23,6 +23,29 @@ async fn main() -> Result<()> {
 
     match cli.command {
         // NOTE: see also https://github.com/Finomnis/tokio-graceful-shutdown/tree/main/examples
+        Commands::Fetch {
+            url,
+            output,
+            timeout,
+            max_redirects,
+            user_agent,
+        } => Toplevel::new(move |s: &mut SubsystemHandle| {
+            s.start(SubsystemBuilder::new("fetch", move |subsys| {
+                crate::commands::fetch::run(
+                    subsys,
+                    url.clone(),
+                    output.clone(),
+                    timeout,
+                    max_redirects,
+                    user_agent.clone(),
+                )
+            }));
+            async {}
+        })
+        .catch_signals()
+        .handle_shutdown_requests(Duration::from_millis(1000))
+        .await
+        .map_err(Into::into),
         Commands::Command1 => Toplevel::new(|s: &mut SubsystemHandle| {
             s.start(SubsystemBuilder::new("command1", command1::run));
             async {}
