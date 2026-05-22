@@ -68,7 +68,6 @@ mdget is a high-performance Rust rewrite of mdurl (TypeScript), designed as a cu
 | `clippy.toml` | Linter rules |
 | `rustfmt.toml` | Formatter settings |
 | `deny.toml` | Dependency policy |
-| `dist-workspace.toml` | Distribution config |
 | `.editorconfig` | Editor consistency |
 | `justfile` | Task automation |
 ## Package Metadata
