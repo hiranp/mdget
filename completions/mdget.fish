@@ -77,6 +77,7 @@ warn\t''
 error\t''"
 complete -c mdget -n "__fish_mdget_using_subcommand command2" -s h -l help -d 'Print help'
 complete -c mdget -n "__fish_mdget_using_subcommand fetch" -s o -l output -d 'Output to file instead of stdout' -r -F
+complete -c mdget -n "__fish_mdget_using_subcommand fetch" -l max-body-words -d 'Hard cap the rendered body to this many words' -r
 complete -c mdget -n "__fish_mdget_using_subcommand fetch" -l timeout -d 'Request timeout in seconds' -r
 complete -c mdget -n "__fish_mdget_using_subcommand fetch" -l max-redirects -d 'Maximum redirects to follow' -r
 complete -c mdget -n "__fish_mdget_using_subcommand fetch" -l user-agent -d 'User-Agent header' -r
@@ -94,6 +95,7 @@ debug\t''
 info\t''
 warn\t''
 error\t''"
+complete -c mdget -n "__fish_mdget_using_subcommand fetch" -l compact -d 'Reduce body output to headings and short paragraph summaries'
 complete -c mdget -n "__fish_mdget_using_subcommand fetch" -s h -l help -d 'Print help'
 complete -c mdget -n "__fish_mdget_using_subcommand completion" -l shell -d 'The shell to generate the completions for' -r -f -a "bash\t''
 elvish\t''

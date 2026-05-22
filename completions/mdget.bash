@@ -233,7 +233,7 @@ _mdget() {
             return 0
             ;;
         mdget__subcmd__fetch)
-            opts="-o -H -l -h --output --timeout --max-redirects --user-agent --home --log-level --log-file-enable --log-file-path --log-file-level --help <URL>"
+            opts="-o -H -l -h --output --compact --max-body-words --timeout --max-redirects --user-agent --home --log-level --log-file-enable --log-file-path --log-file-level --help <URL>"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -244,6 +244,10 @@ _mdget() {
                     return 0
                     ;;
                 -o)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                --max-body-words)
                     COMPREPLY=($(compgen -f "${cur}"))
                     return 0
                     ;;

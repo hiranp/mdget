@@ -7,13 +7,16 @@ pub async fn run(
     _subsys: &mut SubsystemHandle,
     url: String,
     output: Option<PathBuf>,
+    compact: bool,
+    max_body_words: Option<usize>,
     timeout: u64,
     max_redirects: u32,
     user_agent: String,
 ) -> Result<()> {
     tracing::info!("Fetching URL: {}", url);
 
-    let options = FetchOptions { timeout_secs: timeout, max_redirects, user_agent };
+    let options =
+        FetchOptions { timeout_secs: timeout, max_redirects, user_agent, compact, max_body_words };
 
     let result = fetch_url(&url, options).await?;
 

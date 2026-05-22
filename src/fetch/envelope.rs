@@ -42,6 +42,10 @@ pub struct SuccessEnvelope {
     pub status: u16,
     pub title: Option<String>,
     pub word_count: usize,
+    pub body_word_count: usize,
+    pub render_mode: String,
+    pub body_word_limit: Option<usize>,
+    pub body_truncated: bool,
     pub fetched_at: chrono::DateTime<chrono::Utc>,
     pub redirect_chain: Option<Vec<String>>,
 }
@@ -52,6 +56,10 @@ impl SuccessEnvelope {
         status: u16,
         title: Option<String>,
         word_count: usize,
+        body_word_count: usize,
+        compact: bool,
+        body_word_limit: Option<usize>,
+        body_truncated: bool,
         redirect_chain: Option<Vec<String>>,
     ) -> Self {
         Self {
@@ -60,6 +68,10 @@ impl SuccessEnvelope {
             status,
             title,
             word_count,
+            body_word_count,
+            render_mode: if compact { "compact".to_string() } else { "full".to_string() },
+            body_word_limit,
+            body_truncated,
             fetched_at: chrono::Utc::now(),
             redirect_chain,
         }
