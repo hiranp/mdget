@@ -14,10 +14,24 @@ pub struct ErrorEnvelope {
 }
 
 impl ErrorEnvelope {
+    pub fn new(
+        url: String,
+        status: Option<u16>,
+        error: impl Into<String>,
+        message: impl Into<String>,
+    ) -> Self {
+        Self {
+            success: false,
+            url,
+            status,
+            error: error.into(),
+            message: message.into(),
+            fetched_at: chrono::Utc::now(),
+        }
+    }
+
     pub fn to_yaml(&self) -> Result<String> {
-        let yaml = serde_yml::to_string(self)
-            .map_err(|e| miette::miette!("YAML serialization failed: {}", e))?;
-        Ok(format!("---\n{}---\n", yaml))
+        yaml_frontmatter(self)
     }
 }
 
@@ -33,6 +47,24 @@ pub struct SuccessEnvelope {
 }
 
 impl SuccessEnvelope {
+    pub fn new(
+        url: String,
+        status: u16,
+        title: Option<String>,
+        word_count: usize,
+        redirect_chain: Option<Vec<String>>,
+    ) -> Self {
+        Self {
+            success: true,
+            url,
+            status,
+            title,
+            word_count,
+            fetched_at: chrono::Utc::now(),
+            redirect_chain,
+        }
+    }
+
     pub fn to_output(&self, markdown_body: &str) -> Result<String> {
         let frontmatter = yaml_frontmatter(self)?;
         Ok(format!("{}\n{}", frontmatter, markdown_body))
@@ -42,5 +74,6 @@ impl SuccessEnvelope {
 pub fn yaml_frontmatter<T: Serialize>(data: &T) -> Result<String> {
     let yaml = serde_yml::to_string(data)
         .map_err(|e| miette::miette!("YAML serialization failed: {}", e))?;
-    Ok(format!("---\n{}---\n", yaml))
+    let cleaned = yaml.trim().trim_start_matches("---").trim();
+    Ok(format!("---\n{}\n---\n", cleaned))
 }
