@@ -38,10 +38,8 @@ async fn output_mode_frontmatter_markdown_default() {
         .await;
 
     let url = format!("{}/ok", server.url());
-    let options = FetchOptions {
-        output_mode: OutputMode::FrontmatterMarkdown,
-        ..Default::default()
-    };
+    let options =
+        FetchOptions { output_mode: OutputMode::FrontmatterMarkdown, ..Default::default() };
     let output = fetch_url(&url, options).await.expect("fetch output");
 
     let (frontmatter, body) = parse_frontmatter_and_body(&output);
@@ -49,8 +47,14 @@ async fn output_mode_frontmatter_markdown_default() {
     assert_eq!(frontmatter["success"], YamlValue::Bool(true));
     assert_eq!(frontmatter["status"], YamlValue::Number(200.into()));
     assert_eq!(frontmatter["title"], YamlValue::String("Test Page".to_string()));
-    assert_eq!(frontmatter["description"], YamlValue::String("This is a test description.".to_string()));
-    assert_eq!(frontmatter["canonical_url"], YamlValue::String("https://example.com/canonical".to_string()));
+    assert_eq!(
+        frontmatter["description"],
+        YamlValue::String("This is a test description.".to_string())
+    );
+    assert_eq!(
+        frontmatter["canonical_url"],
+        YamlValue::String("https://example.com/canonical".to_string())
+    );
     assert_eq!(body.trim(), "Hello world");
 }
 
@@ -68,10 +72,7 @@ async fn output_mode_markdown_only() {
         .await;
 
     let url = format!("{}/ok", server.url());
-    let options = FetchOptions {
-        output_mode: OutputMode::MarkdownOnly,
-        ..Default::default()
-    };
+    let options = FetchOptions { output_mode: OutputMode::MarkdownOnly, ..Default::default() };
     let output = fetch_url(&url, options).await.expect("fetch output");
 
     // Output must be only the markdown body, no frontmatter or -- delimiters
@@ -104,10 +105,7 @@ async fn output_mode_json_envelope() {
         .await;
 
     let url = format!("{}/ok", server.url());
-    let options = FetchOptions {
-        output_mode: OutputMode::JsonEnvelope,
-        ..Default::default()
-    };
+    let options = FetchOptions { output_mode: OutputMode::JsonEnvelope, ..Default::default() };
     let output = fetch_url(&url, options).await.expect("fetch output");
 
     // Must be valid JSON
@@ -117,6 +115,9 @@ async fn output_mode_json_envelope() {
     assert_eq!(json["status"], JsonValue::Number(200.into()));
     assert_eq!(json["title"], JsonValue::String("Test Page".to_string()));
     assert_eq!(json["description"], JsonValue::String("This is a test description.".to_string()));
-    assert_eq!(json["canonical_url"], JsonValue::String("https://example.com/canonical".to_string()));
+    assert_eq!(
+        json["canonical_url"],
+        JsonValue::String("https://example.com/canonical".to_string())
+    );
     assert_eq!(json["markdown"], JsonValue::String("Hello world".to_string()));
 }

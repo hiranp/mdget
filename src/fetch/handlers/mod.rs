@@ -1,7 +1,7 @@
-pub mod json;
-pub mod text;
 pub mod feed;
+pub mod json;
 pub mod pdf;
+pub mod text;
 
 #[derive(Debug, Clone)]
 pub struct HandlerResult {

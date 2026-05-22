@@ -1,4 +1,7 @@
-use crate::fetch::{FetchOptions, fetch_url, OutputMode, RequestOptions, request::parse_header};
+use crate::fetch::{
+    FetchOptions, OutputMode, RequestOptions, fetch_url,
+    request::{parse_cookie, parse_header, validate_bearer},
+};
 use miette::{IntoDiagnostic, Result};
 use std::path::PathBuf;
 use tokio_graceful_shutdown::SubsystemHandle;
@@ -35,11 +38,17 @@ pub async fn run(
         OutputMode::FrontmatterMarkdown
     };
 
-    let request_options = RequestOptions {
-        headers: parsed_headers,
-        cookies,
-        bearer,
-    };
+    let mut parsed_cookies = Vec::new();
+    for c in cookies {
+        parsed_cookies.push(parse_cookie(&c)?);
+    }
+
+    if let Some(token) = &bearer {
+        validate_bearer(token)?;
+    }
+
+    let request_options =
+        RequestOptions { headers: parsed_headers, cookies: parsed_cookies, bearer };
 
     let options = FetchOptions {
         timeout_secs: timeout,

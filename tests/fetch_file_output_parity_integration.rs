@@ -33,11 +33,8 @@ async fn parity_default_mode_stdout_equals_file_bytes() {
     let bin_path = env!("CARGO_BIN_EXE_mdget");
 
     // 1. Fetch to stdout
-    let stdout_output = Command::new(bin_path)
-        .arg("fetch")
-        .arg(&url)
-        .output()
-        .expect("failed to run binary");
+    let stdout_output =
+        Command::new(bin_path).arg("fetch").arg(&url).output().expect("failed to run binary");
     assert!(stdout_output.status.success(), "stdout command failed with: {:?}", stdout_output);
     let stdout_str = String::from_utf8(stdout_output.stdout).expect("valid utf-8 stdout");
 

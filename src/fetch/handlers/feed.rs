@@ -7,13 +7,14 @@ pub fn handle(body_bytes: &[u8], _content_type: Option<&str>) -> HandlerResult {
     match feed_rs::parser::parse(body_bytes) {
         Ok(feed) => {
             let mut md = String::new();
-            
+
             // Format feed title
             let feed_title = feed.title.map(|t| t.content).unwrap_or_else(|| "Feed".to_string());
             md.push_str(&format!("# {}\n\n", feed_title));
 
             for entry in feed.entries {
-                let entry_title = entry.title.map(|t| t.content).unwrap_or_else(|| "Untitled".to_string());
+                let entry_title =
+                    entry.title.map(|t| t.content).unwrap_or_else(|| "Untitled".to_string());
                 md.push_str(&format!("## {}\n", entry_title));
 
                 if let Some(link) = entry.links.first() {
@@ -73,7 +74,7 @@ mod tests {
     <summary>Short summary of first post.</summary>
   </entry>
 </feed>"#;
-        
+
         let res = handle(xml.as_bytes(), Some("application/atom+xml"));
         assert_eq!(res.title, Some("Test Feed".to_string()));
         assert!(res.body.contains("# Test Feed"));

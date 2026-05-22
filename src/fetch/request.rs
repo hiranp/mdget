@@ -35,17 +35,46 @@ pub fn parse_header(raw: &str) -> Result<(String, String)> {
     // Header values cannot contain control characters
     for c in value.chars() {
         if c.is_control() {
-            return Err(miette!("Invalid header value for '{}': contains control characters", name));
+            return Err(miette!(
+                "Invalid header value for '{}': contains control characters",
+                name
+            ));
         }
     }
 
     Ok((name, value))
 }
 
-pub fn merge_cookies(cookies: &[String]) -> Option<String> {
-    if cookies.is_empty() {
-        None
-    } else {
-        Some(cookies.join("; "))
+pub fn parse_cookie(raw: &str) -> Result<String> {
+    let cookie = raw.trim();
+    let Some((name, _value)) = cookie.split_once('=') else {
+        return Err(miette!("Invalid cookie format: missing '=' in '{}'", raw));
+    };
+
+    let name = name.trim();
+    if name.is_empty() {
+        return Err(miette!("Invalid cookie format: empty cookie name in '{}'", raw));
     }
+
+    if cookie.chars().any(char::is_control) {
+        return Err(miette!("Invalid cookie '{}': contains control characters", raw));
+    }
+
+    Ok(cookie.to_string())
+}
+
+pub fn validate_bearer(token: &str) -> Result<()> {
+    if token.trim().is_empty() {
+        return Err(miette!("Invalid bearer token: token cannot be empty"));
+    }
+
+    if token.chars().any(char::is_control) {
+        return Err(miette!("Invalid bearer token: contains control characters"));
+    }
+
+    Ok(())
+}
+
+pub fn merge_cookies(cookies: &[String]) -> Option<String> {
+    if cookies.is_empty() { None } else { Some(cookies.join("; ")) }
 }
