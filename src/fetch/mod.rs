@@ -26,7 +26,7 @@ impl Default for FetchOptions {
         Self {
             timeout_secs: 30,
             max_redirects: 5,
-            user_agent: "mdget/0.2.0".to_string(),
+            user_agent: concat!("mdget/", env!("CARGO_PKG_VERSION")).to_string(),
             compact: false,
             max_body_words: None,
         }
@@ -102,17 +102,23 @@ pub async fn fetch_url(url: &str, options: FetchOptions) -> Result<String> {
     let reduced = reduce_markdown(&markdown, options.compact, options.max_body_words);
 
     // 7. Build SuccessEnvelope
-    let envelope = SuccessEnvelope::new(
-        response.final_url,
-        response.status,
-        article.title,
-        article.word_count,
-        reduced.body_word_count,
-        options.compact,
-        options.max_body_words,
-        reduced.truncated,
-        if response.redirect_chain.is_empty() { None } else { Some(response.redirect_chain) },
-    );
+    let envelope = SuccessEnvelope {
+        success: true,
+        url: response.final_url,
+        status: response.status,
+        title: article.title,
+        word_count: article.word_count,
+        body_word_count: reduced.body_word_count,
+        render_mode: if options.compact { "compact".to_string() } else { "full".to_string() },
+        body_word_limit: options.max_body_words,
+        body_truncated: reduced.truncated,
+        fetched_at: chrono::Utc::now(),
+        redirect_chain: if response.redirect_chain.is_empty() {
+            None
+        } else {
+            Some(response.redirect_chain)
+        },
+    };
 
     // 8. Return frontmatter + markdown
     envelope.to_output(&reduced.body)

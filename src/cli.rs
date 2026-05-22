@@ -80,7 +80,7 @@ pub enum Commands {
         #[arg(long, default_value = "5", help = "Maximum redirects to follow")]
         max_redirects: u32,
 
-        #[arg(long, default_value = "mdget/0.2.0", help = "User-Agent header")]
+        #[arg(long, default_value = concat!("mdget/", env!("CARGO_PKG_VERSION")), help = "User-Agent header")]
         user_agent: String,
     },
     #[command(about = "Generate shell completion script", disable_help_flag = true)]

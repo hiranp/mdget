@@ -62,12 +62,7 @@ fn truncate_to_words(text: &str, max_words: usize) -> String {
         return String::new();
     }
 
-    let mut words = Vec::new();
-    for word in text.split_whitespace().take(max_words) {
-        words.push(word);
-    }
-
-    words.join(" ")
+    text.split_whitespace().take(max_words).collect::<Vec<_>>().join(" ")
 }
 
 fn count_words(text: &str) -> usize {

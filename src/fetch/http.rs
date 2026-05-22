@@ -31,6 +31,9 @@ impl HttpClient {
     /// thread-safe, so no issues with move semantics. Redirect history is captured via
     /// `response.history()` which returns an iterator over each redirect step.
     pub async fn fetch(&self, url: &str) -> Result<HttpResponse> {
+        // Validate before crossing the thread boundary
+        url::Url::parse(url).map_err(|_| miette!("Invalid URL format: {url}"))?;
+
         let url = url.to_string();
         let timeout = self.timeout_secs;
         let max_redirects = self.max_redirects;
@@ -49,8 +52,6 @@ impl HttpClient {
         max_redirects: u32,
         user_agent: &str,
     ) -> Result<HttpResponse> {
-        let _ = url::Url::parse(url).map_err(|_| miette!("Invalid URL format: {url}"))?;
-
         // Build agent with explicit limits and redirect history enabled.
         let config = ureq::Agent::config_builder()
             .http_status_as_error(false)
