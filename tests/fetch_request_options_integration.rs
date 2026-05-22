@@ -143,7 +143,7 @@ fn test_cookie_merging() {
 #[test]
 fn test_cli_conflict_json_no_frontmatter() {
     let output = std::process::Command::new("cargo")
-        .args(&[
+        .args([
             "run", 
             "--quiet", 
             "--bin", 
@@ -165,7 +165,7 @@ fn test_cli_conflict_json_no_frontmatter() {
 #[test]
 fn test_cli_header_flag_does_not_conflict_with_home() {
     let output = std::process::Command::new("cargo")
-        .args(&[
+        .args([
             "run", 
             "--quiet", 
             "--bin", 

@@ -4,9 +4,11 @@
 mod convert;
 mod envelope;
 mod extract;
+mod handlers;
 mod http;
 mod reduce;
 pub mod request;
+mod router;
 
 pub use self::request::{OutputMode, RequestOptions};
 use miette::Result;
@@ -70,64 +72,180 @@ pub async fn fetch_url(url: &str, options: FetchOptions) -> Result<String> {
         );
     }
 
-    // 4. Detect charset and convert to UTF-8
-    let charset_label = extract_charset_from_headers(response.content_type.as_deref())
-        .or_else(|| extract_charset_from_html(&response.body))
-        .unwrap_or_else(|| "utf-8".to_string());
+    // 4. Route content type and dispatch to appropriate handler
+    let handler_kind = router::route_content_type(response.content_type.as_deref());
 
-    let encoding =
-        encoding_rs::Encoding::for_label(charset_label.as_bytes()).unwrap_or(encoding_rs::UTF_8);
-    let html = encoding.decode(&response.body).0.into_owned();
+    match handler_kind {
+        router::HandlerKind::Text => {
+            let charset_label = extract_charset_from_headers(response.content_type.as_deref())
+                .unwrap_or_else(|| "utf-8".to_string());
+            let encoding =
+                encoding_rs::Encoding::for_label(charset_label.as_bytes()).unwrap_or(encoding_rs::UTF_8);
+            let text = encoding.decode(&response.body).0.into_owned();
 
-    // 5. Extract article
-    let article = match extract::extract_article(&html) {
-        Ok(a) => a,
-        Err(e) => {
-            return error_output(
-                response.final_url.clone(),
-                Some(response.status),
-                "extraction_failed",
-                format!("Failed to extract article: {e}"),
-            );
+            let handler_res = handlers::text::handle(&text, options.max_body_words);
+
+            let envelope = SuccessEnvelope {
+                success: true,
+                url: response.final_url,
+                status: response.status,
+                title: handler_res.title,
+                word_count: handler_res.word_count,
+                body_word_count: handler_res.body_word_count,
+                render_mode: if options.compact { "compact".to_string() } else { "full".to_string() },
+                body_word_limit: options.max_body_words,
+                body_truncated: handler_res.truncated,
+                fetched_at: chrono::Utc::now(),
+                redirect_chain: if response.redirect_chain.is_empty() {
+                    None
+                } else {
+                    Some(response.redirect_chain)
+                },
+            };
+
+            envelope.to_output(&handler_res.body)
         }
-    };
+        router::HandlerKind::Json => {
+            let handler_res = handlers::json::handle(&response.body, response.content_type.as_deref());
 
-    // 6. Convert to markdown
-    let markdown = match convert::html_to_markdown(&article.content_html, &response.final_url) {
-        Ok(md) => md,
-        Err(e) => {
-            return error_output(
-                response.final_url.clone(),
-                Some(response.status),
-                "conversion_failed",
-                format!("Failed to convert to markdown: {e}"),
-            );
+            let envelope = SuccessEnvelope {
+                success: true,
+                url: response.final_url,
+                status: response.status,
+                title: handler_res.title,
+                word_count: handler_res.word_count,
+                body_word_count: handler_res.body_word_count,
+                render_mode: if options.compact { "compact".to_string() } else { "full".to_string() },
+                body_word_limit: options.max_body_words,
+                body_truncated: handler_res.truncated,
+                fetched_at: chrono::Utc::now(),
+                redirect_chain: if response.redirect_chain.is_empty() {
+                    None
+                } else {
+                    Some(response.redirect_chain)
+                },
+            };
+
+            envelope.to_output(&handler_res.body)
         }
-    };
+        router::HandlerKind::Feed => {
+            let handler_res = handlers::feed::handle(&response.body, response.content_type.as_deref());
 
-    let reduced = reduce_markdown(&markdown, options.compact, options.max_body_words);
+            let envelope = SuccessEnvelope {
+                success: true,
+                url: response.final_url,
+                status: response.status,
+                title: handler_res.title,
+                word_count: handler_res.word_count,
+                body_word_count: handler_res.body_word_count,
+                render_mode: if options.compact { "compact".to_string() } else { "full".to_string() },
+                body_word_limit: options.max_body_words,
+                body_truncated: handler_res.truncated,
+                fetched_at: chrono::Utc::now(),
+                redirect_chain: if response.redirect_chain.is_empty() {
+                    None
+                } else {
+                    Some(response.redirect_chain)
+                },
+            };
 
-    // 7. Build SuccessEnvelope
-    let envelope = SuccessEnvelope {
-        success: true,
-        url: response.final_url,
-        status: response.status,
-        title: article.title,
-        word_count: article.word_count,
-        body_word_count: reduced.body_word_count,
-        render_mode: if options.compact { "compact".to_string() } else { "full".to_string() },
-        body_word_limit: options.max_body_words,
-        body_truncated: reduced.truncated,
-        fetched_at: chrono::Utc::now(),
-        redirect_chain: if response.redirect_chain.is_empty() {
-            None
-        } else {
-            Some(response.redirect_chain)
-        },
-    };
+            envelope.to_output(&handler_res.body)
+        }
+        router::HandlerKind::Pdf => {
+            let handler_res = match handlers::pdf::handle(&response.body) {
+                Ok(res) => res,
+                Err(msg) => {
+                    return error_output(
+                        response.final_url.clone(),
+                        Some(response.status),
+                        "pdf_extraction_failed",
+                        msg,
+                    );
+                }
+            };
 
-    // 8. Return frontmatter + markdown
-    envelope.to_output(&reduced.body)
+            let envelope = SuccessEnvelope {
+                success: true,
+                url: response.final_url,
+                status: response.status,
+                title: handler_res.title,
+                word_count: handler_res.word_count,
+                body_word_count: handler_res.body_word_count,
+                render_mode: if options.compact { "compact".to_string() } else { "full".to_string() },
+                body_word_limit: options.max_body_words,
+                body_truncated: handler_res.truncated,
+                fetched_at: chrono::Utc::now(),
+                redirect_chain: if response.redirect_chain.is_empty() {
+                    None
+                } else {
+                    Some(response.redirect_chain)
+                },
+            };
+
+            envelope.to_output(&handler_res.body)
+        }
+        router::HandlerKind::Html | router::HandlerKind::Unknown => {
+            // Existing HTML pipeline (untouched for exact baseline compatibility)
+            // 4. Detect charset and convert to UTF-8
+            let charset_label = extract_charset_from_headers(response.content_type.as_deref())
+                .or_else(|| extract_charset_from_html(&response.body))
+                .unwrap_or_else(|| "utf-8".to_string());
+
+            let encoding =
+                encoding_rs::Encoding::for_label(charset_label.as_bytes()).unwrap_or(encoding_rs::UTF_8);
+            let html = encoding.decode(&response.body).0.into_owned();
+
+            // 5. Extract article
+            let article = match extract::extract_article(&html) {
+                Ok(a) => a,
+                Err(e) => {
+                    return error_output(
+                        response.final_url.clone(),
+                        Some(response.status),
+                        "extraction_failed",
+                        format!("Failed to extract article: {e}"),
+                    );
+                }
+            };
+
+            // 6. Convert to markdown
+            let markdown = match convert::html_to_markdown(&article.content_html, &response.final_url) {
+                Ok(md) => md,
+                Err(e) => {
+                    return error_output(
+                        response.final_url.clone(),
+                        Some(response.status),
+                        "conversion_failed",
+                        format!("Failed to convert to markdown: {e}"),
+                    );
+                }
+            };
+
+            let reduced = reduce_markdown(&markdown, options.compact, options.max_body_words);
+
+            // 7. Build SuccessEnvelope
+            let envelope = SuccessEnvelope {
+                success: true,
+                url: response.final_url,
+                status: response.status,
+                title: article.title,
+                word_count: article.word_count,
+                body_word_count: reduced.body_word_count,
+                render_mode: if options.compact { "compact".to_string() } else { "full".to_string() },
+                body_word_limit: options.max_body_words,
+                body_truncated: reduced.truncated,
+                fetched_at: chrono::Utc::now(),
+                redirect_chain: if response.redirect_chain.is_empty() {
+                    None
+                } else {
+                    Some(response.redirect_chain)
+                },
+            };
+
+            // 8. Return frontmatter + markdown
+            envelope.to_output(&reduced.body)
+        }
+    }
 }
 
 fn extract_charset_from_headers(content_type: Option<&str>) -> Option<String> {
