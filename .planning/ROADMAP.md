@@ -36,6 +36,7 @@
 3. `--json` envelope mode works
 4. Custom headers, cookies, bearer tokens functional
 5. Output to file with `-o` flag
+6. Token reduction options (`--compact` and `--max-body-words`) implemented and functional
 
 ---
 

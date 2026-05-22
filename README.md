@@ -64,6 +64,7 @@ graph TD
 
 - 🔌 **Agent-Safe Fetching**: Automatically detects charsets from HTTP headers or HTML meta tags, handles decompression, and respects client-side timeouts.
 - 🎯 **Noise Reduction**: Intelligently scores HTML nodes to remove headers, footers, sidebars, advertisements, and navigation links.
+- 📉 **Token Reduction & Optimization**: Shrink content sizes for LLMs dynamically via compact mode (summarizing paragraphs to the first sentence, stripping code blocks) or hard word-count limits.
 - 🔗 **Absolute URL Resolution**: Rewrites all relative links (`<a href="...">`) and images (`<img src="...">`) into absolute URLs using the document base URL, ensuring agents can follow links or fetch assets.
 - 📊 **Table to GFM Conversion**: Converts standard HTML tables into clean GitHub Flavored Markdown (GFM) tables.
 - 📦 **YAML Frontmatter**: Wraps success and failure responses in a consistent YAML envelope to give agents structured access to response headers, redirect chains, and page metadata.
@@ -112,6 +113,19 @@ mdget fetch https://example.com \
   --timeout 15 \
   --max-redirects 3 \
   --user-agent "MyAgent/1.0"
+```
+
+### Token Reduction (LLM Optimization)
+
+Reduce the size of the retrieved page content for LLM contexts, RAG pipelines, or agents using the following parameters:
+
+- `--compact`: Strips out code blocks and summarizes each paragraph down to its first sentence/excerpt.
+- `--max-body-words <WORDS>`: Caps the output body word count to a maximum value, truncating any trailing content.
+
+Example:
+
+```bash
+mdget fetch https://example.com --compact --max-body-words 100
 ```
 
 ### Shell Completions
@@ -165,6 +179,10 @@ url: https://example.com/
 status: 200
 title: Example Domain
 word_count: 19
+body_word_count: 19
+render_mode: full
+body_word_limit: null
+body_truncated: false
 fetched_at: '2026-05-22T00:34:41.071405Z'
 redirect_chain:
 - https://example.com/
