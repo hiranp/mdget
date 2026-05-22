@@ -2,12 +2,8 @@ use mdget::fetch::{FetchOptions, fetch_url};
 use serde_yml::Value;
 
 fn parse_frontmatter_and_body(output: &str) -> (Value, &str) {
-    let stripped = output
-        .strip_prefix("---\n")
-        .expect("output must start with YAML frontmatter");
-    let split_index = stripped
-        .find("\n---\n")
-        .expect("output must contain closing YAML delimiter");
+    let stripped = output.strip_prefix("---\n").expect("output must start with YAML frontmatter");
+    let split_index = stripped.find("\n---\n").expect("output must contain closing YAML delimiter");
 
     let yaml = &stripped[..split_index];
     let body = &stripped[split_index + "\n---\n".len()..];
@@ -95,9 +91,8 @@ async fn fetch_success_includes_redirect_chain_and_final_url() {
 
     let start_url = format!("{}/start", server.url());
     let final_url = format!("{}/final", server.url());
-    let output = fetch_url(&start_url, FetchOptions::default())
-        .await
-        .expect("redirect fetch output");
+    let output =
+        fetch_url(&start_url, FetchOptions::default()).await.expect("redirect fetch output");
 
     let (frontmatter, body) = parse_frontmatter_and_body(&output);
 
@@ -109,10 +104,7 @@ async fn fetch_success_includes_redirect_chain_and_final_url() {
         .as_sequence()
         .expect("redirect_chain should be present for redirected response");
     assert!(!redirects.is_empty());
-    assert!(redirects
-        .iter()
-        .filter_map(Value::as_str)
-        .any(|entry| entry.contains("/start")));
+    assert!(redirects.iter().filter_map(Value::as_str).any(|entry| entry.contains("/start")));
 
     assert!(body.contains("# Test Article"));
 }
