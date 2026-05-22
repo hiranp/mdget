@@ -66,6 +66,9 @@ graph TD
 - 🎯 **Noise Reduction**: Intelligently scores HTML nodes to remove headers, footers, sidebars, advertisements, and navigation links.
 - 📉 **Token Reduction & Optimization**: Shrink content sizes for LLMs dynamically via compact mode (summarizing paragraphs to the first sentence, stripping code blocks) or hard word-count limits.
 - 🔗 **Absolute URL Resolution**: Rewrites all relative links (`<a href="...">`) and images (`<img src="...">`) into absolute URLs using the document base URL, ensuring agents can follow links or fetch assets.
+- 📨 **Multiple Output Formats**: Choose between the default YAML frontmatter + markdown envelope, markdown-only (`--no-frontmatter`), or a single structured JSON object (`--json`) for direct API ingestion.
+- 🎛️ **Request Customization**: Send custom headers (`-H/--header`), cookies (`--cookie`), or bearer tokens (`--bearer`) to authenticate or match browser behaviors.
+- 📁 **Rich Content Support**: Automatically parses, converts, and formats HTML, JSON, XML/RSS/Atom feeds, plain text, and PDF files into structured Markdown.
 - 📊 **Table to GFM Conversion**: Converts standard HTML tables into clean GitHub Flavored Markdown (GFM) tables.
 - 📦 **YAML Frontmatter**: Wraps success and failure responses in a consistent YAML envelope to give agents structured access to response headers, redirect chains, and page metadata.
 - 🔧 **Layered Configuration**: Integrates defaults, TOML files (`config.toml`), environment variables, and CLI overrides seamlessly.
@@ -113,6 +116,38 @@ mdget fetch https://example.com \
   --timeout 15 \
   --max-redirects 3 \
   --user-agent "MyAgent/1.0"
+```
+
+### Request Customization
+
+Customize outgoing HTTP requests using headers, cookies, and bearer tokens:
+
+```bash
+# Add custom headers
+mdget fetch https://example.com -H "X-Custom-Header: value" -H "Accept: text/plain"
+
+# Add custom cookies
+mdget fetch https://example.com --cookie "session=xyz123" --cookie "theme=dark"
+
+# Authenticate with a Bearer Token (overrides any manual Authorization header)
+mdget fetch https://example.com --bearer "your-jwt-token"
+```
+
+### Output Mode Selection
+
+Control the format of the output returned by `mdget`. By default, `mdget` prepends a YAML metadata frontmatter. You can alter this behavior with the following mutually exclusive flags:
+
+- `--no-frontmatter`: Discard the YAML envelope and output raw Markdown body only.
+- `--json`: Output a single formatted JSON object containing all metadata envelope keys and the markdown body under the `markdown` key.
+
+Example:
+
+```bash
+# Get raw markdown body only
+mdget fetch https://example.com --no-frontmatter
+
+# Get output wrapped in a JSON envelope
+mdget fetch https://example.com --json
 ```
 
 ### Token Reduction (LLM Optimization)
@@ -178,6 +213,8 @@ success: true
 url: https://example.com/
 status: 200
 title: Example Domain
+description: This is a description of the example domain.
+canonical_url: https://example.com/canonical
 word_count: 19
 body_word_count: 19
 render_mode: full
@@ -210,12 +247,37 @@ fetched_at: '2026-05-22T00:34:50.143208Z'
 ---
 ```
 
+### JSON Envelope Example
+
+When the `--json` flag is provided, the output is formatted as a single JSON object:
+
+```json
+{
+  "success": true,
+  "url": "https://example.com/",
+  "status": 200,
+  "title": "Example Domain",
+  "description": "This is a description of the example domain.",
+  "canonical_url": "https://example.com/canonical",
+  "word_count": 19,
+  "body_word_count": 19,
+  "render_mode": "full",
+  "body_word_limit": null,
+  "body_truncated": false,
+  "fetched_at": "2026-05-22T00:34:41.071405Z",
+  "redirect_chain": [
+    "https://example.com/"
+  ],
+  "markdown": "# Example Domain\n\nThis domain is for use in documentation examples without needing permission. Avoid use in operations.\n\n[Learn more](https://iana.org/domains/example)"
+}
+```
+
 ---
 
 ## 🗺️ Roadmap
 
-- **Phase 1: HTTP Core & Extraction** (Completed)
-- **Phase 2: Content Types & Output Modes** (In Progress)
+- **Phase 1: HTTP Core & Extraction** (Completed ✅)
+- **Phase 2: Content Types & Output Modes** (Completed ✅)
 - **Phase 3: Caching & Resources** (Planned)
 - **Phase 4: Authentication & Filtering** (Planned)
 

@@ -1,4 +1,4 @@
-use crate::fetch::{
+use mdget::fetch::{
     FetchOptions, OutputMode, RequestOptions, fetch_url,
     request::{parse_cookie, parse_header, validate_bearer},
 };

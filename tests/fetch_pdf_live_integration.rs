@@ -101,3 +101,27 @@ async fn live_arxiv_recent_page_discovers_pdf_and_extracts_text() {
     assert!(frontmatter["status"].as_u64().unwrap_or(0) < 400);
     assert!(body.split_whitespace().count() > 20, "expected extracted PDF text to be non-trivial");
 }
+
+#[tokio::test]
+#[ignore = "Live network test: fetches https://arxiv.org/list/cs.AI/recent"]
+async fn live_arxiv_pdf_respects_max_body_words_limit() {
+    let list_url = "https://arxiv.org/list/cs.AI/recent";
+    let list_html = fetch_text_with_retry(list_url, 3).await.expect("download arxiv list html");
+
+    let pdf_url =
+        extract_first_arxiv_pdf_link(&list_html).expect("arxiv list should expose a pdf link");
+
+    let output = fetch_url(
+        &pdf_url,
+        FetchOptions { timeout_secs: 60, max_body_words: Some(30), ..Default::default() },
+    )
+    .await
+    .expect("fetch pdf output with max body words");
+
+    let (frontmatter, body) = parse_frontmatter_and_body(&output);
+
+    assert_eq!(frontmatter["success"], Value::Bool(true));
+    assert_eq!(frontmatter["body_truncated"], Value::Bool(true));
+    assert!(frontmatter["body_word_count"].as_u64().unwrap_or(0) <= 30);
+    assert!(body.split_whitespace().count() <= 30);
+}

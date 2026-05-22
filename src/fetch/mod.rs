@@ -12,10 +12,13 @@ pub mod request;
 mod router;
 
 use self::envelope::{ErrorEnvelope, SuccessEnvelope};
+use self::handlers::HandlerResult;
 use self::http::{HttpClient, HttpFetchError, HttpResponse};
 use self::reduce::reduce_markdown;
 pub use self::request::{OutputMode, RequestOptions};
 use miette::Result;
+
+const PDF_HARD_CHAR_CAP: usize = 200_000;
 
 struct SuccessEnvelopeParts {
     title: Option<String>,
@@ -26,6 +29,13 @@ struct SuccessEnvelopeParts {
     body_truncated: bool,
     compact: bool,
     body_word_limit: Option<usize>,
+}
+
+struct PostHandlerOutput {
+    body: String,
+    body_word_count: usize,
+    truncated: bool,
+    original_word_count: usize,
 }
 
 pub struct FetchOptions {
@@ -105,7 +115,7 @@ pub async fn fetch_url(url: &str, options: FetchOptions) -> Result<String> {
                     word_count: handler_res.word_count,
                     body_word_count: handler_res.body_word_count,
                     body_truncated: handler_res.truncated,
-                    compact: options.compact,
+                    compact: false,
                     body_word_limit: options.max_body_words,
                 },
             );
@@ -115,42 +125,45 @@ pub async fn fetch_url(url: &str, options: FetchOptions) -> Result<String> {
         router::HandlerKind::Json => {
             let handler_res =
                 handlers::json::handle(&response.body, response.content_type.as_deref());
+            let post = apply_post_handler_limits(handler_res, options.max_body_words, None);
 
             let envelope = build_success_envelope(
                 &response,
                 SuccessEnvelopeParts {
-                    title: handler_res.title,
+                    title: None,
                     description: None,
                     canonical_url: None,
-                    word_count: handler_res.word_count,
-                    body_word_count: handler_res.body_word_count,
-                    body_truncated: handler_res.truncated,
-                    compact: options.compact,
+                    word_count: post.original_word_count,
+                    body_word_count: post.body_word_count,
+                    body_truncated: post.truncated,
+                    compact: false,
                     body_word_limit: options.max_body_words,
                 },
             );
 
-            output::format_output(&envelope, &handler_res.body, options.output_mode)
+            output::format_output(&envelope, &post.body, options.output_mode)
         }
         router::HandlerKind::Feed => {
             let handler_res =
                 handlers::feed::handle(&response.body, response.content_type.as_deref());
+            let handler_title = handler_res.title.clone();
+            let post = apply_post_handler_limits(handler_res, options.max_body_words, None);
 
             let envelope = build_success_envelope(
                 &response,
                 SuccessEnvelopeParts {
-                    title: handler_res.title,
+                    title: handler_title,
                     description: None,
                     canonical_url: None,
-                    word_count: handler_res.word_count,
-                    body_word_count: handler_res.body_word_count,
-                    body_truncated: handler_res.truncated,
-                    compact: options.compact,
+                    word_count: post.original_word_count,
+                    body_word_count: post.body_word_count,
+                    body_truncated: post.truncated,
+                    compact: false,
                     body_word_limit: options.max_body_words,
                 },
             );
 
-            output::format_output(&envelope, &handler_res.body, options.output_mode)
+            output::format_output(&envelope, &post.body, options.output_mode)
         }
         router::HandlerKind::Pdf => {
             let handler_res = match handlers::pdf::handle(&response.body) {
@@ -164,22 +177,27 @@ pub async fn fetch_url(url: &str, options: FetchOptions) -> Result<String> {
                     );
                 }
             };
+            let post = apply_post_handler_limits(
+                handler_res,
+                options.max_body_words,
+                Some(PDF_HARD_CHAR_CAP),
+            );
 
             let envelope = build_success_envelope(
                 &response,
                 SuccessEnvelopeParts {
-                    title: handler_res.title,
+                    title: None,
                     description: None,
                     canonical_url: None,
-                    word_count: handler_res.word_count,
-                    body_word_count: handler_res.body_word_count,
-                    body_truncated: handler_res.truncated,
-                    compact: options.compact,
+                    word_count: post.original_word_count,
+                    body_word_count: post.body_word_count,
+                    body_truncated: post.truncated,
+                    compact: false,
                     body_word_limit: options.max_body_words,
                 },
             );
 
-            output::format_output(&envelope, &handler_res.body, options.output_mode)
+            output::format_output(&envelope, &post.body, options.output_mode)
         }
         router::HandlerKind::Html | router::HandlerKind::Unknown => {
             // Existing HTML pipeline (untouched for exact baseline compatibility)
@@ -309,6 +327,36 @@ fn build_success_envelope(response: &HttpResponse, parts: SuccessEnvelopeParts) 
     }
 }
 
+fn apply_post_handler_limits(
+    handler_res: HandlerResult,
+    max_body_words: Option<usize>,
+    hard_char_cap: Option<usize>,
+) -> PostHandlerOutput {
+    let (capped_body, char_capped) = apply_hard_char_cap(&handler_res.body, hard_char_cap);
+    let reduced = reduce_markdown(&capped_body, false, max_body_words);
+
+    PostHandlerOutput {
+        body: reduced.body,
+        body_word_count: reduced.body_word_count,
+        truncated: handler_res.truncated || char_capped || reduced.truncated,
+        original_word_count: handler_res.word_count,
+    }
+}
+
+fn apply_hard_char_cap(body: &str, hard_char_cap: Option<usize>) -> (String, bool) {
+    let Some(limit) = hard_char_cap else {
+        return (body.to_string(), false);
+    };
+
+    let char_count = body.chars().count();
+    if char_count <= limit {
+        return (body.to_string(), false);
+    }
+
+    let capped = body.chars().take(limit).collect::<String>();
+    (capped, true)
+}
+
 fn classify_transport_error(err: &HttpFetchError, url: &str) -> (&'static str, String) {
     match err {
         HttpFetchError::Timeout => ("http_timeout", format!("Request timed out: {url}")),
@@ -334,9 +382,10 @@ fn classify_transport_error(err: &HttpFetchError, url: &str) -> (&'static str, S
 #[cfg(test)]
 mod tests {
     use super::{
-        FetchOptions, classify_transport_error, extract_charset_from_headers,
-        extract_charset_from_html,
+        FetchOptions, apply_hard_char_cap, apply_post_handler_limits, classify_transport_error,
+        extract_charset_from_headers, extract_charset_from_html,
     };
+    use crate::fetch::handlers::HandlerResult;
     use crate::fetch::http::HttpFetchError;
 
     #[test]
@@ -412,5 +461,29 @@ mod tests {
             "https://example.com",
         );
         assert_eq!(kind, "http_error");
+    }
+
+    #[test]
+    fn hard_char_cap_truncates_when_limit_exceeded() {
+        let (body, truncated) = apply_hard_char_cap("abcdef", Some(3));
+        assert_eq!(body, "abc");
+        assert!(truncated);
+    }
+
+    #[test]
+    fn post_handler_limits_apply_word_truncation() {
+        let handler_res = HandlerResult {
+            title: None,
+            body: "one two three four five".to_string(),
+            word_count: 5,
+            body_word_count: 5,
+            truncated: false,
+        };
+
+        let post = apply_post_handler_limits(handler_res, Some(3), None);
+        assert_eq!(post.body, "one two three");
+        assert_eq!(post.body_word_count, 3);
+        assert_eq!(post.original_word_count, 5);
+        assert!(post.truncated);
     }
 }

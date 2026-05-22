@@ -129,11 +129,21 @@ async fn fetch_json_content() {
 
     assert_eq!(frontmatter["success"], Value::Bool(true));
     assert_eq!(frontmatter["status"], Value::Number(200.into()));
-    assert_eq!(frontmatter["url"], Value::String(url));
+    assert_eq!(frontmatter["url"], Value::String(url.clone()));
 
     assert!(body.contains("```json"));
     assert!(body.contains("\"name\": \"mdget\""));
     assert!(body.contains("\"features\": ["));
+
+    let limited_output =
+        fetch_url(&url, FetchOptions { max_body_words: Some(6), ..Default::default() })
+            .await
+            .expect("json output with word limit");
+
+    let (limited_frontmatter, limited_body) = parse_frontmatter_and_body(&limited_output);
+    assert_eq!(limited_frontmatter["body_truncated"], Value::Bool(true));
+    assert!(limited_frontmatter["body_word_count"].as_u64().unwrap_or(0) <= 6);
+    assert!(limited_body.split_whitespace().count() <= 6);
 }
 
 #[tokio::test]
@@ -201,6 +211,16 @@ async fn fetch_feed_content() {
     assert!(body.contains("## First Entry"));
     assert!(body.contains("- **Link:** http://example.org/1"));
     assert!(body.contains("- **Summary:** This is the summary of the first entry."));
+
+    let limited_output =
+        fetch_url(&url, FetchOptions { max_body_words: Some(8), ..Default::default() })
+            .await
+            .expect("feed output with word limit");
+
+    let (limited_frontmatter, limited_body) = parse_frontmatter_and_body(&limited_output);
+    assert_eq!(limited_frontmatter["body_truncated"], Value::Bool(true));
+    assert!(limited_frontmatter["body_word_count"].as_u64().unwrap_or(0) <= 8);
+    assert!(limited_body.split_whitespace().count() <= 8);
 }
 
 #[tokio::test]
