@@ -1,151 +1,254 @@
-# 🦀 Rust CLI Template
+# 🦀 mdget — Agent-First HTTP Client
 
-[![License](https://img.shields.io/github/license/hiranp/rust-cli-template)](LICENSE)
-[![Rust](https://img.shields.io/badge/rust-1.56%2B-blue.svg)](https://www.rust-lang.org)
-[![cargo-generate](https://img.shields.io/badge/cargo--generate-template-orange.svg)](https://github.com/cargo-generate/cargo-generate)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Rust](https://img.shields.io/badge/rust-2024%20(1.85%2B)-orange.svg)](https://www.rust-lang.org)
+[![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)]()
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-blueviolet.svg)](CONTRIBUTING.md)
 
-> 🚀 A modern, feature-rich Rust CLI application template with best practices baked in.
+> 🚀 An agent-first command-line utility and library that fetches web pages and extracts clean, structured, noise-free Markdown. Perfect for LLM prompts, RAG pipelines, and automated agent workflows.
 
+---
 
-## Use As GitHub Template
+## 📖 Table of Contents
 
-Click **Use this template** on GitHub, or generate directly with `cargo-generate`:
+- [🦀 mdget — Agent-First HTTP Client](#-mdget--agent-first-http-client)
+  - [📖 Table of Contents](#-table-of-contents)
+  - [🔍 Overview](#-overview)
+  - [🏗️ Architecture](#️-architecture)
+  - [✨ Features](#-features)
+  - [📦 Installation](#-installation)
+    - [From Source](#from-source)
+  - [🚀 CLI Usage](#-cli-usage)
+    - [Basic Fetch](#basic-fetch)
+    - [Save Output to File](#save-output-to-file)
+    - [Custom Options](#custom-options)
+    - [Shell Completions](#shell-completions)
+  - [📝 Configuration](#-configuration)
+    - [Example `config.toml`](#example-configtoml)
+  - [✉️ Output Format](#️-output-format)
+    - [Success Envelope Example](#success-envelope-example)
+    - [Error Envelope Example](#error-envelope-example)
+  - [🗺️ Roadmap](#️-roadmap)
+  - [🛠️ Development](#️-development)
+    - [Setup](#setup)
+    - [Run Tests](#run-tests)
+    - [Formatting and Linting](#formatting-and-linting)
+  - [🤝 Contributing](#-contributing)
+  - [📄 License](#-license)
+
+---
+
+## 🔍 Overview
+
+When AI agents or LLMs browse the web, they are often overwhelmed by cookie banners, navigation menus, ads, tracker scripts, and complex layouts. **mdget** solves this by acting as a modern, agent-friendly replacement for `curl` or `wget`.
+
+It doesn't just download raw HTML; it **extracts the main article content** (using a sophisticated scoring algorithm similar to Readability.js), **converts the DOM into clean Markdown**, **resolves all relative paths to absolute URLs**, and wraps the result in a **predictable YAML metadata frontmatter envelope**.
+
+---
+
+## 🏗️ Architecture
+
+```mermaid
+graph TD
+    A[URL Input] --> B[HTTP Fetcher]
+    B -->|Charset & Redirect Tracking| C[HTML Parser]
+    C --> D[Article Extractor: Readability Scoring]
+    D --> E[GFM Converter: Markdown Rendering]
+    E --> F[Envelope Packager: YAML Metadata]
+    F --> G[stdout / Output File]
+```
+
+---
 
 ## ✨ Features
 
-This template provides everything you need to build a professional Rust CLI application:
+- 🔌 **Agent-Safe Fetching**: Automatically detects charsets from HTTP headers or HTML meta tags, handles decompression, and respects client-side timeouts.
+- 🎯 **Noise Reduction**: Intelligently scores HTML nodes to remove headers, footers, sidebars, advertisements, and navigation links.
+- 🔗 **Absolute URL Resolution**: Rewrites all relative links (`<a href="...">`) and images (`<img src="...">`) into absolute URLs using the document base URL, ensuring agents can follow links or fetch assets.
+- 📊 **Table to GFM Conversion**: Converts standard HTML tables into clean GitHub Flavored Markdown (GFM) tables.
+- 📦 **YAML Frontmatter**: Wraps success and failure responses in a consistent YAML envelope to give agents structured access to response headers, redirect chains, and page metadata.
+- 🔧 **Layered Configuration**: Integrates defaults, TOML files (`config.toml`), environment variables, and CLI overrides seamlessly.
 
-- 🔧 **Layered Configuration** - Flexible configuration management with [config-rs](https://github.com/mehcode/config-rs)
-- 🎯 **Command Line Parsing** - Powerful argument parsing and shell completions with [clap](https://github.com/clap-rs/clap)
-- 📁 **XDG Directory Support** - Cross-platform directory handling with [directories](https://github.com/dirs-dev/directories-rs)
-- 📊 **Structured Logging** - Comprehensive logging and tracing with [tracing](https://github.com/tokio-rs/tracing)
-- 🎨 **Beautiful Error Handling** - User-friendly error messages with [miette](https://github.com/zkat/miette)
-- ⚡ **Async Runtime** - High-performance async support with graceful shutdown using [tokio](https://github.com/tokio-rs/tokio)
-- 🤖 **GitHub Automation** - Built-in CI, security audit, and Dependabot workflows
-- 🧰 **Task Runner** - `just` recipes for build, test, lint, docs, and publishing
-- ✍️ **Editor Defaults** - Preconfigured VS Code and `.editorconfig` defaults
+---
 
-## 📦 Quick Start
+## 📦 Installation
 
-### Prerequisites
+Ensure you have Rust and Cargo installed (edition 2024, Rust 1.85+ recommended).
 
-First, install `cargo-generate`:
+### From Source
 
 ```bash
-cargo install cargo-generate
+git clone https://github.com/hiranp/mdget.git
+cd mdget
+cargo install --path .
 ```
 
-### Usage
+---
 
-**Generate into a new subfolder:**
+## 🚀 CLI Usage
+
+### Basic Fetch
+
+Fetch any web page and print the parsed Markdown with its YAML frontmatter to `stdout`:
 
 ```bash
-cargo generate --git https://github.com/hiranp/rust-cli-template.git
+mdget fetch https://example.com
 ```
 
-**Generate in the current directory:**
+### Save Output to File
+
+Use the `-o` or `--output` flag to save the output directly to a file:
 
 ```bash
-cargo generate --init --git https://github.com/hiranp/rust-cli-template.git
+mdget fetch https://example.com -o article.md
 ```
 
-## 🏗️ Project Structure
+### Custom Options
 
-```text
-your-cli-app/
-├── src/
-│   ├── main.rs          # Application entry point
-│   ├── cli.rs           # Command line interface definition
-│   ├── config.rs        # Configuration management
-│   ├── log.rs           # Logging setup
-│   └── commands/        # Command implementations
-│       ├── mod.rs
-│       ├── command1.rs
-│       ├── command2.rs
-│       └── completion.rs
-├── config/
-│   └── config.toml      # Default configuration
-├── build.rs             # Build script for completions
-└── Cargo.toml          # Project dependencies
-```
-
-## 🚀 What You Get
-
-- **Modern Rust**: Uses Rust 2024 edition with latest best practices
-- **Shell Completions**: Auto-generated completions for bash, zsh, fish, and PowerShell
-- **Configuration Files**: TOML-based configuration with environment variable support
-- **Structured Commands**: Clean command structure with subcommands support
-- **Graceful Shutdown**: Proper signal handling and resource cleanup
-- **Cross-platform**: Works on Windows, macOS, and Linux
-
-## 🛠️ Development
-
-After generating your project:
+You can override defaults with CLI arguments:
 
 ```bash
-# Build the project
-cargo build
-
-# Run with debug logging
-RUST_LOG=debug cargo run
-
-# Generate shell completions
-cargo run -- completion bash > completions.bash
-
-# Run tests
-cargo test
-
-# Check code quality
-cargo clippy
-cargo fmt
+mdget fetch https://example.com \
+  --timeout 15 \
+  --max-redirects 3 \
+  --user-agent "MyAgent/1.0"
 ```
 
-Using `just` (recommended):
+### Shell Completions
+
+Generate shell completions dynamically:
 
 ```bash
-# Install once
-cargo install just
+# For zsh
+mdget completion zsh > ~/.zsh/completions/_mdget
 
-# Run local CI checks
-just check
-
-# Build release binaries
-just release
-
-# Publish after checks
-just publish
+# For bash
+mdget completion bash > ~/.bash_completion.d/mdget
 ```
+
+---
 
 ## 📝 Configuration
 
-The template includes a layered configuration system:
+`mdget` uses a layered configuration system, loading settings in the following order (lowest to highest priority):
 
-1. **Default values** in `config/config.toml`
-2. **Environment variables** (prefixed with your app name)
-3. **Command line arguments** (highest priority)
+1. **Default Values** (e.g., info logging, default agent-safe HTTP settings).
+2. **System-wide configuration file**: `/etc/mdget/config.toml`
+3. **User configuration file**: `~/.config/mdget/config.toml` (or platform equivalent, e.g. `~/Library/Application Support/mdget/config.toml` on macOS).
+4. **Environment variables**: Prefixed with `MDGET_` (e.g., `MDGET_LOG_LEVEL=debug`).
+5. **Command-line arguments** (e.g., `--log-level debug`).
 
-Example configuration structure:
+### Example `config.toml`
 
 ```toml
-[app]
-name = "my-cli-app"
-version = "0.1.0"
-
-[logging]
+[log]
 level = "info"
-file = "app.log"
+
+[log.file]
+enabled = false
+path = "~/.cache/mdget/mdget.log"
+level = "info"
 ```
+
+---
+
+## ✉️ Output Format
+
+`mdget` returns a standard envelope structure separated by standard YAML markers (`---`).
+
+### Success Envelope Example
+
+```yaml
+---
+success: true
+url: https://example.com/
+status: 200
+title: Example Domain
+word_count: 19
+fetched_at: '2026-05-22T00:34:41.071405Z'
+redirect_chain:
+- https://example.com/
+---
+
+# Example Domain
+
+This domain is for use in documentation examples without needing permission. Avoid use in operations.
+
+[Learn more](https://iana.org/domains/example)
+```
+
+### Error Envelope Example
+
+If a request fails (e.g., 404, network timeout, DNS failure), `mdget` outputs an error envelope with status code 0 and exits gracefully with a structured error log.
+
+```yaml
+---
+success: false
+url: https://httpbin.org/status/404
+status: 404
+error: http_404
+message: 'HTTP 404: Not Found'
+fetched_at: '2026-05-22T00:34:50.143208Z'
+---
+```
+
+---
+
+## 🗺️ Roadmap
+
+- **Phase 1: HTTP Core & Extraction** (Completed)
+- **Phase 2: Content Types & Output Modes** (In Progress)
+- **Phase 3: Caching & Resources** (Planned)
+- **Phase 4: Authentication & Filtering** (Planned)
+
+---
+
+## 🛠️ Development
+
+### Setup
+
+```bash
+git clone https://github.com/hiranp/mdget.git
+cd mdget
+```
+
+### Run Tests
+
+Verify code changes and run integration tests:
+
+```bash
+cargo test
+```
+
+### Formatting and Linting
+
+Keep the code clean and idiomatic:
+
+```bash
+# Format code
+cargo fmt --all
+
+# Run linter
+cargo clippy --all-targets --all-features -- -D warnings
+```
+
+---
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Contributions are highly appreciated! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for environment setup instructions, style guides, and PR workflows.
+
+By participating in this project, you agree to abide by the Contributor Covenant [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
+
+---
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
 
-## 🙏 Acknowledgments
+---
 
-- Built with ❤️ using the amazing Rust ecosystem
-- Inspired by modern CLI best practices
-- Thanks to all the crate maintainers for their excellent work
+🙏 Acknowledgments
+Built with ❤️ using the amazing Rust ecosystem
+Inspired by modern CLI best practices
+Thanks to all the crate maintainers for their excellent work
