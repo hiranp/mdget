@@ -51,7 +51,7 @@ We are always looking for ways to improve `mdget` (e.g., adding support for more
 ### Prerequisites
 
 Ensure you have the following installed on your system:
-- **Rust Toolchain**: Rust 1.85+ (Edition 2024).
+- **Rust Toolchain**: Rust 1.90+ (Edition 2024).
 - **Cargo**: Usually bundled with Rust.
 - **Just** (Optional): A handy command runner to build/check the project easily.
 

@@ -1,7 +1,7 @@
 # 🦀 mdget — Agent-First HTTP Client
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Rust](https://img.shields.io/badge/rust-2024%20(1.85%2B)-orange.svg)](https://www.rust-lang.org)
+[![Rust](https://img.shields.io/badge/rust-2024%20(1.90%2B)-orange.svg)](https://www.rust-lang.org)
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)]()
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-blueviolet.svg)](CONTRIBUTING.md)
 
@@ -81,7 +81,7 @@ graph TD
 
 ## 📦 Installation
 
-Ensure you have Rust and Cargo installed (edition 2024, Rust 1.85+ recommended).
+Ensure you have Rust and Cargo installed (edition 2024, Rust 1.90+ recommended).
 
 ### From Source
 
